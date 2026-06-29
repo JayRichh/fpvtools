@@ -3,7 +3,7 @@
     <header class="nav">
       <div class="nav-inner">
         <router-link class="brand" to="/">FPV Tools</router-link>
-        <nav class="nav-links">
+        <nav class="nav-links" aria-label="Main navigation">
           <router-link to="/pid">PID</router-link>
           <router-link to="/power">Power</router-link>
           <router-link to="/motors">Motors</router-link>

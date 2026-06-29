@@ -6,15 +6,12 @@
     </section>
 
     <section class="tools-grid">
-      <router-link
-        v-for="tool in tools"
-        :key="tool.path"
-        :to="tool.path"
-        class="tool-card"
-      >
-        <h2 class="tool-name">{{ tool.name }}</h2>
-        <p class="tool-desc">{{ tool.description }}</p>
-      </router-link>
+      <article v-for="tool in tools" :key="tool.path" class="tool-article">
+        <router-link :to="tool.path" class="tool-card">
+          <h2 class="tool-name">{{ tool.name }}</h2>
+          <p class="tool-desc">{{ tool.description }}</p>
+        </router-link>
+      </article>
     </section>
   </div>
 </template>
@@ -96,6 +93,10 @@ const tools = [
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--fpv-space-md);
+}
+
+.tool-article {
+  display: contents;
 }
 
 .tool-card {

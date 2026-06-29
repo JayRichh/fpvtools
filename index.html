@@ -4,13 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="FPV Tools — browser-native calculators and simulators for FPV drone pilots.">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fpv-tools.vercel.app">
+  <meta property="og:image" content="">
+  <link rel="canonical" href="https://fpv-tools.vercel.app">
   <title>FPV Tools</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" as="style">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "FPV Tools",
+    "description": "Browser-native calculators and simulators for FPV drone pilots",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0" }
+  }
+  </script>
 </head>
 <body>
   <div id="app"></div>
+  <noscript>
+    <style>#app{display:none}</style>
+    <div style="max-width:600px;margin:40px auto;padding:20px;font-family:system-ui">
+      <h1>FPV Tools</h1>
+      <p>FPV Tools requires JavaScript to run the interactive calculators and simulators.</p>
+      <p>Available tools: PID Simulator, Pack Calculator, Motor Sizing, RF Link Budget, VTX Checker, Unit Converters, Camera Tilt Calculator, and Tune Diff.</p>
+    </div>
+  </noscript>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
