@@ -1,17 +1,14 @@
+<script setup lang="ts">
+import '@components/convert/unit-converter.js'
+</script>
 <template>
-  <div class="stub">
-    <h1>Unit Converter</h1>
+  <div class="convert-view">
+    <h1>Unit Converters</h1>
+    <p class="subtitle">FPV-specific unit conversions — power, frequency, electrical, and angles.</p>
+    <unit-converter></unit-converter>
   </div>
 </template>
-
 <style scoped>
-.stub {
-  padding: var(--fpv-space-lg) 0;
-}
-h1 {
-  font-family: var(--fpv-font-sans);
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--fpv-text);
-}
+.convert-view { max-width: 700px; margin: 0 auto; }
+.subtitle { color: var(--fpv-text-muted); margin-bottom: var(--fpv-space-lg); font-size: var(--fpv-font-label); }
 </style>
