@@ -1,1 +1,0 @@
-import{_ as t,o as s,c as a,a as c}from"./index-DbSzttr9.js";const o={},r={class:"stub"};function n(l,e){return s(),a("div",r,[...e[0]||(e[0]=[c("h1",null,"Tilt Calculator",-1)])])}const d=t(o,[["render",n],["__scopeId","data-v-83cc44ab"]]);export{d as default};

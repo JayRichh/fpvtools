@@ -1,1 +1,0 @@
-import{_ as o,o as s,c as t,a}from"./index-DbSzttr9.js";const c={},r={class:"stub"};function n(_,e){return s(),t("div",r,[...e[0]||(e[0]=[a("h1",null,"Blackbox Viewer",-1)])])}const l=o(c,[["render",n],["__scopeId","data-v-622d1722"]]);export{l as default};

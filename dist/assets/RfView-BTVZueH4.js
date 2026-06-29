@@ -1,1 +1,0 @@
-import{_ as s,o as t,c,a as o}from"./index-DbSzttr9.js";const a={},n={class:"stub"};function r(_,e){return t(),c("div",n,[...e[0]||(e[0]=[o("h1",null,"RF Link Budget",-1)])])}const f=s(a,[["render",r],["__scopeId","data-v-875cc2f7"]]);export{f as default};

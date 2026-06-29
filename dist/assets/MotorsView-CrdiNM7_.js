@@ -1,1 +1,0 @@
-import{_ as e,o as t,c as s,a}from"./index-DbSzttr9.js";const c={},r={class:"stub"};function n(_,o){return t(),s("div",r,[...o[0]||(o[0]=[a("h1",null,"Motor Calculator",-1)])])}const d=e(c,[["render",n],["__scopeId","data-v-2c3b4728"]]);export{d as default};
