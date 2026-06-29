@@ -1,11 +1,79 @@
 import { mulberry32, gaussianNoise } from '@core/shared/prng'
 import { radToDeg } from '@core/shared/units'
-import type { SimConfig, SimResult, SimSample } from './types'
-import { createFilterBank } from './filters'
-import { createPlantState, stepPlant } from './plant'
-import { createControllerState, stepController } from './controller'
+import type { SimConfig, SimResult, SimSample, ControllerConfig, PlantModel, SetpointProfile, Disturbance } from './types'
+import { createFilterBank, type FilterBank } from './filters'
+import { createPlantState, stepPlant, type PlantState } from './plant'
+import { createControllerState, stepController, type ControllerState } from './controller'
 import { generateSetpoint } from './setpoint'
 import { computeMetrics } from './metrics'
+
+// ── StepContext & stepSim ─────────────────────────────────────────────────────
+
+export interface StepContext {
+  plantState: PlantState
+  ctrlState: ControllerState
+  filterBank: FilterBank
+  ctrlConfig: ControllerConfig
+  plant: PlantModel
+  spProfile: SetpointProfile
+  disturbances: Disturbance[]
+  noiseStd: number
+  rng: () => number
+  dt: number
+}
+
+/**
+ * Advance the simulation by one controller tick.
+ * Returns the sample for this step.
+ * Mutates plantState, ctrlState, filterBank in place.
+ */
+export function stepSim(ctx: StepContext, _step: number, tMs: number): SimSample {
+  // 1. Generate setpoint (deg/s)
+  const setpointDegS = generateSetpoint(ctx.spProfile, tMs)
+
+  // 2. Sum active disturbance torques
+  let disturbanceTorque = 0
+  for (const d of ctx.disturbances) {
+    if (tMs >= d.startMs && tMs < d.startMs + d.durationMs) {
+      disturbanceTorque += d.torqueNm
+    }
+  }
+
+  // 3. Read true gyro (rad/s → deg/s)
+  const gyroDegS = radToDeg(ctx.plantState.omega)
+
+  // 4. Add noise
+  const noiseVal = ctx.noiseStd > 0 ? gaussianNoise(ctx.rng) * ctx.noiseStd : 0
+  const gyroMeasuredDegS = gyroDegS + noiseVal
+
+  // 5. Filter gyro through gyro lowpass, then optional notch
+  let gyroFiltered = ctx.filterBank.gyro.process(gyroMeasuredDegS)
+  if (ctx.filterBank.notch) {
+    gyroFiltered = ctx.filterBank.notch.process(gyroFiltered)
+  }
+
+  // 6. Step controller
+  const ctrlOut = stepController(ctx.ctrlState, ctx.ctrlConfig, setpointDegS, gyroFiltered, ctx.dt)
+
+  // 7. Step plant
+  stepPlant(ctx.plantState, ctx.plant, ctrlOut.output, disturbanceTorque, ctx.dt)
+
+  return {
+    tMs,
+    setpointDegS,
+    gyroDegS,
+    gyroMeasuredDegS,
+    errorDegS: setpointDegS - gyroDegS,
+    pTerm: ctrlOut.pTerm,
+    iTerm: ctrlOut.iTerm,
+    dTerm: ctrlOut.dTerm,
+    ffTerm: ctrlOut.ffTerm,
+    motorOutput: ctrlOut.output,
+    saturated: ctrlOut.saturated,
+  }
+}
+
+// ── simulate (one-shot) ───────────────────────────────────────────────────────
 
 export function simulate(config: SimConfig): SimResult {
   const { controller: ctrlConfig, plant, noise, setpoint: spProfile, disturbances, durationMs } = config
@@ -18,64 +86,30 @@ export function simulate(config: SimConfig): SimResult {
   const outputRateHz = Math.min(1000, fs)
   const decimateEvery = Math.max(1, Math.round(fs / outputRateHz))
 
-  const plantState = createPlantState(plant)
-  const ctrlState = createControllerState(ctrlConfig)
-  const filterBank = createFilterBank(ctrlConfig.filters, fs)
-
-  const rng = mulberry32(noise.seed)
   const noiseStd = noise.kind === 'gaussian' ? (noise.gaussianStdDegS ?? 0) : 0
+
+  const ctx: StepContext = {
+    plantState: createPlantState(plant),
+    ctrlState: createControllerState(ctrlConfig),
+    filterBank: createFilterBank(ctrlConfig.filters, fs),
+    ctrlConfig,
+    plant,
+    spProfile,
+    disturbances,
+    noiseStd,
+    rng: mulberry32(noise.seed),
+    dt,
+  }
 
   const samples: SimSample[] = []
 
   for (let step = 0; step < totalSteps; step++) {
     const tMs = step * dt * 1000
+    const sample = stepSim(ctx, step, tMs)
 
-    // 1. Generate setpoint (deg/s)
-    const setpointDegS = generateSetpoint(spProfile, tMs)
-
-    // 2. Sum active disturbance torques
-    let disturbanceTorque = 0
-    for (const d of disturbances) {
-      const active = tMs >= d.startMs && tMs < d.startMs + d.durationMs
-      if (active) {
-        disturbanceTorque += d.torqueNm
-      }
-    }
-
-    // 3. Read true gyro (rad/s → deg/s)
-    const gyroDegS = radToDeg(plantState.omega)
-
-    // 4. Add noise
-    const noiseVal = noiseStd > 0 ? gaussianNoise(rng) * noiseStd : 0
-    const gyroMeasuredDegS = gyroDegS + noiseVal
-
-    // 5. Filter gyro through gyro lowpass, then optional notch
-    let gyroFiltered = filterBank.gyro.process(gyroMeasuredDegS)
-    if (filterBank.notch) {
-      gyroFiltered = filterBank.notch.process(gyroFiltered)
-    }
-
-    // 6. Step controller
-    const ctrlOut = stepController(ctrlState, ctrlConfig, setpointDegS, gyroFiltered, dt)
-
-    // 7. Step plant
-    stepPlant(plantState, plant, ctrlOut.output, disturbanceTorque, dt)
-
-    // 8. Record sample (decimated)
+    // Record sample (decimated)
     if (step % decimateEvery === 0) {
-      samples.push({
-        tMs,
-        setpointDegS,
-        gyroDegS,
-        gyroMeasuredDegS,
-        errorDegS: setpointDegS - gyroDegS,
-        pTerm: ctrlOut.pTerm,
-        iTerm: ctrlOut.iTerm,
-        dTerm: ctrlOut.dTerm,
-        ffTerm: ctrlOut.ffTerm,
-        motorOutput: ctrlOut.output,
-        saturated: ctrlOut.saturated,
-      })
+      samples.push(sample)
     }
   }
 

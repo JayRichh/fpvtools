@@ -1,9 +1,11 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
-import { simulate } from '@core/pid/simulate'
+import { I18nController } from '../primitives/I18nController.js'
+import { SimRunner } from '@core/pid/sim-runner'
+import { computeMetrics } from '@core/pid/metrics'
 import { GAIN_PRESETS, PLANT_PRESETS } from '@core/pid/presets'
-import type { SimConfig, SimResult } from '@core/pid/types'
+import type { SimConfig, SimResult, SimSample } from '@core/pid/types'
 import type { ScopeSeries } from '../scope/fpv-scope.js'
 import '../primitives/index.js'
 import '../scope/fpv-scope.js'
@@ -46,6 +48,37 @@ export class PidSimulator extends LitElement {
     css`
       :host {
         display: block;
+      }
+
+      .hud-toolbar {
+        display: flex;
+        align-items: center;
+        gap: var(--fpv-space-sm);
+        padding: var(--fpv-space-sm) 0;
+      }
+
+      .hud-btn {
+        padding: var(--fpv-space-xs) var(--fpv-space-md);
+        background: var(--fpv-surface-2);
+        border: 1px solid var(--fpv-border);
+        border-radius: var(--fpv-radius-sm);
+        color: var(--fpv-text);
+        font-size: var(--fpv-font-label);
+        cursor: pointer;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+        min-height: 36px;
+      }
+
+      .hud-btn:hover {
+        border-color: var(--fpv-primary);
+        background-color: var(--fpv-border);
+      }
+
+      .hud-time {
+        font-family: var(--fpv-font-mono);
+        font-size: var(--fpv-font-body);
+        color: var(--fpv-text-muted);
+        margin-left: auto;
       }
 
       .layout {
@@ -133,39 +166,137 @@ export class PidSimulator extends LitElement {
     `,
   ]
 
+  // ── i18n ──────────────────────────────────────────────────────────────────
+  private _i18n = new I18nController(this)
+
+  // ── State ──────────────────────────────────────────────────────────────────
   @state() private _config: SimConfig = DEFAULT_CONFIG
   @state() private _result: SimResult | null = null
   @state() private _activeTab = 0
+  @state() private _running = true
+  @state() private _elapsedMs = 0
 
-  private _debounceTimer = 0
+  // ── Continuous simulation internals ───────────────────────────────────────
+  private _rafId = 0
+  private _lastFrameTs = 0
+  private _runner: SimRunner | null = null
+  private _rollingBuf: SimSample[] = []
+  private _fullSamples: SimSample[] = []
+  private _windowMs = 2000
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   firstUpdated() {
-    this._runSim()
+    this._resetSim()
+    this._startLoop()
   }
 
-  // ── Simulation ────────────────────────────────────────────────────────────
-
-  private _runSim() {
-    this._result = simulate(this._config)
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    cancelAnimationFrame(this._rafId)
   }
 
-  private _scheduleRun() {
-    clearTimeout(this._debounceTimer)
-    this._debounceTimer = window.setTimeout(() => this._runSim(), 16)
+  // ── Continuous simulation ─────────────────────────────────────────────────
+
+  private _resetSim() {
+    this._runner = new SimRunner(this._config)
+    this._rollingBuf = []
+    this._fullSamples = []
+    this._elapsedMs = 0
   }
+
+  private _startLoop() {
+    // Idempotent: cancel any existing rAF chain first
+    cancelAnimationFrame(this._rafId)
+    this._running = true
+    this._lastFrameTs = performance.now()
+    this._tick()
+  }
+
+  private _stopLoop() {
+    this._running = false
+    cancelAnimationFrame(this._rafId)
+
+    // Compute metrics from accumulated full-run samples
+    let spAmplitude = 0
+    const sp = this._config.setpoint
+    if (sp.kind === 'step' || sp.kind === 'ramp' || sp.kind === 'sine') {
+      spAmplitude = sp.amplitudeDegS
+    } else if (sp.kind === 'trace') {
+      spAmplitude = sp.samplesDegS.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
+    }
+    const metrics = computeMetrics(this._fullSamples, spAmplitude)
+    this._result = { samples: this._fullSamples, metrics }
+  }
+
+  private _tick() {
+    if (!this._running || !this._runner) return
+
+    this._rafId = requestAnimationFrame((ts) => {
+      if (!this._running) return
+
+      const deltaMs = ts - this._lastFrameTs
+      this._lastFrameTs = ts
+
+      // Cap delta to avoid huge jumps on tab-switch
+      const clampedDelta = Math.min(deltaMs, 50)
+
+      const newSamples = this._runner!.tick(clampedDelta)
+
+      // Accumulate for metrics (computed on Stop)
+      this._fullSamples.push(...newSamples)
+
+      // Rolling window for display
+      this._rollingBuf.push(...newSamples)
+      this._elapsedMs = this._runner!.elapsedMs
+
+      // Trim to windowMs
+      const cutoff = this._elapsedMs - this._windowMs
+      while (this._rollingBuf.length > 0 && this._rollingBuf[0].tMs < cutoff) {
+        this._rollingBuf.shift()
+      }
+
+      this.requestUpdate()
+      this._tick()
+    })
+  }
+
+  // ── HUD button handlers ───────────────────────────────────────────────────
+
+  private _onStart() {
+    this._startLoop()
+  }
+
+  private _onStop() {
+    this._stopLoop()
+  }
+
+  private _onReset() {
+    this._stopLoop()
+    this._resetSim()
+  }
+
+  private _onRestart() {
+    this._stopLoop()
+    this._resetSim()
+    this._startLoop()
+  }
+
+  // ── Config change ─────────────────────────────────────────────────────────
 
   private _onConfigChange(e: CustomEvent<Partial<SimConfig>>) {
     e.stopPropagation()
     this._config = e.detail as SimConfig
-    this._scheduleRun()
+    this._resetSim()
+    if (this._running) {
+      this._startLoop()
+    }
   }
 
   // ── Scope series builders ─────────────────────────────────────────────────
 
   private _buildResponseSeries(): ScopeSeries[] {
-    const samples = this._result?.samples ?? []
+    const samples = this._rollingBuf
     if (samples.length === 0) return []
     const n = samples.length
     const setpoint = new Float32Array(n)
@@ -184,7 +315,7 @@ export class PidSimulator extends LitElement {
   }
 
   private _buildTermsSeries(): ScopeSeries[] {
-    const samples = this._result?.samples ?? []
+    const samples = this._rollingBuf
     if (samples.length === 0) return []
     const n = samples.length
     const p     = new Float32Array(n)
@@ -208,7 +339,7 @@ export class PidSimulator extends LitElement {
   // ── Quad preview helpers ──────────────────────────────────────────────────
 
   private _getQuadProps() {
-    const samples = this._result?.samples ?? []
+    const samples = this._rollingBuf
     if (samples.length === 0) {
       return { motorOutputs: [0, 0, 0, 0], setpointDegS: 0, gyroDegS: 0, errorDegS: 0, saturated: false }
     }
@@ -230,8 +361,12 @@ export class PidSimulator extends LitElement {
   // ── Metrics rendering ─────────────────────────────────────────────────────
 
   private _renderMetrics() {
+    if (this._running) {
+      return html`<div class="metric-null">${this._i18n.t('common.running')}</div>`
+    }
+
     const m = this._result?.metrics
-    if (!m) return html`<div class="metric-null">Run simulation first</div>`
+    if (!m) return html`<div class="metric-null">${this._i18n.t('pid.loading')}</div>`
 
     const fmt = (v: number | null, unit: string, digits = 1) =>
       v === null
@@ -297,9 +432,18 @@ export class PidSimulator extends LitElement {
 
   render() {
     const quad = this._getQuadProps()
-    const durationMs = this._config.durationMs
 
     return html`
+      <div class="hud-toolbar">
+        ${this._running
+          ? html`<button class="hud-btn" @click=${this._onStop}>${this._i18n.t('common.stop')}</button>`
+          : html`<button class="hud-btn" @click=${this._onStart}>${this._i18n.t('common.start')}</button>`
+        }
+        <button class="hud-btn" @click=${this._onReset}>${this._i18n.t('common.reset')}</button>
+        <button class="hud-btn" @click=${this._onRestart}>${this._i18n.t('common.restart')}</button>
+        <span class="hud-time">${this._i18n.t('pid.hud_time_label', { seconds: (this._elapsedMs / 1000).toFixed(1) })}</span>
+      </div>
+
       <div class="layout">
         <div class="controls-col">
           <pid-controls
@@ -319,13 +463,13 @@ export class PidSimulator extends LitElement {
               ${this._activeTab === 0 ? html`
                 <fpv-scope
                   .series=${this._buildResponseSeries()}
-                  .timeMs=${durationMs}
+                  .timeMs=${this._windowMs}
                 ></fpv-scope>
               ` : ''}
               ${this._activeTab === 1 ? html`
                 <fpv-scope
                   .series=${this._buildTermsSeries()}
-                  .timeMs=${durationMs}
+                  .timeMs=${this._windowMs}
                 ></fpv-scope>
               ` : ''}
               ${this._activeTab === 2 ? html`
