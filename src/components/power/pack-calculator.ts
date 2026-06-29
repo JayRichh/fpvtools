@@ -23,7 +23,7 @@ export class PackCalculator extends LitElement {
         gap: var(--fpv-space-md);
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
         .layout {
           grid-template-columns: 1fr;
         }

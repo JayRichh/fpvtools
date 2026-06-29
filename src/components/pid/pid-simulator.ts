@@ -59,6 +59,12 @@ export class PidSimulator extends LitElement {
         .layout {
           grid-template-columns: 1fr;
         }
+
+        .controls-col {
+          position: static;
+          max-height: none;
+          overflow-y: visible;
+        }
       }
 
       .controls-col {
