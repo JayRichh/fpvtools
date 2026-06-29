@@ -1,0 +1,1 @@
+import{_ as t,o,c as s,a}from"./index-DbSzttr9.js";const n={},r={class:"stub"};function c(_,e){return o(),s("div",r,[...e[0]||(e[0]=[a("h1",null,"Unit Converter",-1)])])}const i=t(n,[["render",c],["__scopeId","data-v-b71eaaea"]]);export{i as default};

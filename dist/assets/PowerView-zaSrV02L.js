@@ -1,0 +1,1 @@
+import{_ as o,o as s,c as t,a}from"./index-DbSzttr9.js";const r={},c={class:"stub"};function n(_,e){return s(),t("div",c,[...e[0]||(e[0]=[a("h1",null,"Power Calculator",-1)])])}const d=o(r,[["render",n],["__scopeId","data-v-823094fb"]]);export{d as default};

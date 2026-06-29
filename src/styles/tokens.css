@@ -1,0 +1,81 @@
+/* === FPV Design Tokens === */
+
+:root,
+[data-theme="dark"] {
+  /* Background */
+  --fpv-bg: #0a0a0f;
+  --fpv-surface: #14141f;
+  --fpv-surface-2: #1e1e2e;
+  --fpv-border: #2a2a3a;
+
+  /* Text */
+  --fpv-text: #e0e0e8;
+  --fpv-text-muted: #8888a0;
+
+  /* Brand */
+  --fpv-primary: #00d4aa;
+  --fpv-accent: #ff6b35;
+
+  /* Semantic */
+  --fpv-error: #ff4466;
+  --fpv-success: #44cc88;
+  --fpv-info: #4488ff;
+
+  /* Scope / channel colors */
+  --fpv-scope-setpoint: #00d4aa;
+  --fpv-scope-gyro: #4488ff;
+  --fpv-scope-error: #ff4466;
+  --fpv-scope-p: #ffaa33;
+  --fpv-scope-i: #aa44ff;
+  --fpv-scope-d: #44ccaa;
+  --fpv-scope-ff: #ff6b35;
+  --fpv-scope-motor: #888888;
+
+  /* Spacing */
+  --fpv-space-xs: 4px;
+  --fpv-space-sm: 8px;
+  --fpv-space-md: 16px;
+  --fpv-space-lg: 24px;
+  --fpv-space-xl: 32px;
+
+  /* Radius */
+  --fpv-radius-sm: 4px;
+  --fpv-radius-md: 8px;
+  --fpv-radius-lg: 12px;
+
+  /* Typography */
+  --fpv-font-body: 14px;
+  --fpv-font-label: 12px;
+  --fpv-font-mono: 'JetBrains Mono', monospace;
+  --fpv-font-sans: 'Inter', system-ui, sans-serif;
+}
+
+[data-theme="light"] {
+  --fpv-bg: #f4f4f8;
+  --fpv-surface: #ffffff;
+  --fpv-surface-2: #eaeaf2;
+  --fpv-border: #d0d0e0;
+  --fpv-text: #14141f;
+  --fpv-text-muted: #60607a;
+  --fpv-primary: #00a882;
+  --fpv-accent: #e05520;
+  --fpv-error: #cc2244;
+  --fpv-success: #228855;
+  --fpv-info: #2266cc;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] {
+    --fpv-bg: #f4f4f8;
+    --fpv-surface: #ffffff;
+    --fpv-surface-2: #eaeaf2;
+    --fpv-border: #d0d0e0;
+    --fpv-text: #14141f;
+    --fpv-text-muted: #60607a;
+    --fpv-primary: #00a882;
+    --fpv-accent: #e05520;
+    --fpv-error: #cc2244;
+    --fpv-success: #228855;
+    --fpv-info: #2266cc;
+  }
+}

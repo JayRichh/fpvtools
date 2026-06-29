@@ -1,0 +1,1 @@
+import{_ as s,o as t,c as a,a as o}from"./index-DbSzttr9.js";const c={},n={class:"stub"};function r(_,e){return t(),a("div",n,[...e[0]||(e[0]=[o("h1",null,"PID Tuner",-1)])])}const f=s(c,[["render",r],["__scopeId","data-v-ffe78aea"]]);export{f as default};
