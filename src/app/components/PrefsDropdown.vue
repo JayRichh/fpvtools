@@ -17,6 +17,7 @@
           v-if="open"
           class="prefs-panel"
           :class="{ 'prefs-panel--mobile': isMobile }"
+          :style="isMobile ? {} : panelPos"
           ref="panelRef"
         >
           <div class="prefs-section">
@@ -67,6 +68,7 @@ const open = ref(false)
 const isMobile = ref(false)
 const wrapRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
+const panelPos = ref<Record<string, string>>({})
 
 function themeGlyph(th: Theme): string {
   if (th === 'dark') return '☽'
@@ -74,7 +76,20 @@ function themeGlyph(th: Theme): string {
   return '◐'
 }
 
-function toggle() { open.value = !open.value }
+function calcPanelPos() {
+  if (!wrapRef.value) return
+  const rect = wrapRef.value.getBoundingClientRect()
+  panelPos.value = {
+    top: `${rect.bottom + 6}px`,
+    right: `${window.innerWidth - rect.right}px`,
+    left: 'auto',
+  }
+}
+
+function toggle() {
+  if (!open.value) calcPanelPos()
+  open.value = !open.value
+}
 function close() { open.value = false }
 
 async function selectLocale(loc: LocaleId) {
@@ -97,17 +112,22 @@ function checkMobile() {
   isMobile.value = window.innerWidth <= 600
 }
 
+function onResize() {
+  checkMobile()
+  if (open.value && !isMobile.value) calcPanelPos()
+}
+
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onKeyDown)
-  window.addEventListener('resize', checkMobile)
+  window.addEventListener('resize', onResize)
   checkMobile()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
   document.removeEventListener('keydown', onKeyDown)
-  window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('resize', onResize)
 })
 </script>
 
@@ -143,8 +163,6 @@ onUnmounted(() => {
 /* Panel (Teleported to body) */
 .prefs-panel {
   position: fixed;
-  top: auto;
-  right: var(--fpv-space-md);
   width: 240px;
   background: var(--fpv-surface-2);
   border: 1px solid var(--fpv-border);
@@ -155,11 +173,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--fpv-space-md);
-}
-
-/* Position below the nav bar (~52px) */
-.prefs-panel:not(.prefs-panel--mobile) {
-  top: 52px;
 }
 
 .prefs-panel--mobile {

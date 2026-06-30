@@ -14,12 +14,15 @@ export class FpvSelect extends LitElement {
     css`
       :host {
         display: block;
+        min-width: 0;
+        width: 100%;
       }
 
       .row {
         display: flex;
         align-items: center;
         gap: var(--fpv-space-sm);
+        min-width: 0;
       }
 
       .label {
@@ -33,6 +36,8 @@ export class FpvSelect extends LitElement {
 
       select {
         flex: 1;
+        min-width: 0;
+        width: 0;
         background: var(--fpv-surface-2);
         border: 1px solid var(--fpv-border);
         border-radius: var(--fpv-radius-sm);
