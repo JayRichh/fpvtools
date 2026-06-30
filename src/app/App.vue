@@ -122,7 +122,6 @@ router.afterEach(() => { navOpen.value = false })
 @media (max-width: 768px) {
   .nav-inner {
     padding: var(--fpv-space-sm) var(--fpv-space-md);
-    flex-wrap: nowrap;
   }
 
   .nav-hamburger {

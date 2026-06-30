@@ -66,10 +66,12 @@ class FpvI18n {
     }
     if (typeof value !== 'string') return key // fallback to key itself
 
-    if (!params) return value
+    if (!params) return value as string
+
+    let result: string = value as string
 
     // Process minimal ICU plurals: {n, plural, one{...} other{...}}
-    value = value.replace(
+    result = result.replace(
       /\{(\w+),\s*plural,\s*one\{([^}]*)\}\s*other\{([^}]*)\}\}/g,
       (_, paramName, oneForm, otherForm) => {
         const n = Number(params[paramName] ?? 0)
@@ -79,7 +81,7 @@ class FpvI18n {
     )
 
     // Simple interpolation: {paramName}
-    return value.replace(/\{(\w+)\}/g, (_, p) => String(params[p] ?? `{${p}}`))
+    return result.replace(/\{(\w+)\}/g, (_: string, p: string) => String(params[p] ?? `{${p}}`))
   }
 
   subscribe(cb: Callback): () => void {

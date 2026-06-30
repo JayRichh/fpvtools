@@ -122,16 +122,21 @@ export class TiltCalculator extends LitElement {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const dpr = window.devicePixelRatio || 1
     const W = canvas.offsetWidth || 500
     const H = 200
-    canvas.width = W
-    canvas.height = H
+    canvas.width = Math.round(W * dpr)
+    canvas.height = Math.round(H * dpr)
+
+    ctx.save()
+    ctx.scale(dpr, dpr)
 
     const cs = getComputedStyle(this)
     const primary = cs.getPropertyValue('--fpv-primary').trim() || '#00d4aa'
     const textMuted = cs.getPropertyValue('--fpv-text-muted').trim() || '#8888a0'
     const textColor = cs.getPropertyValue('--fpv-text').trim() || '#e0e0e8'
     const surface2 = cs.getPropertyValue('--fpv-surface-2').trim() || '#1e1e2e'
+    const fontMono = cs.getPropertyValue('--fpv-font-mono').trim() || 'JetBrains Mono, monospace'
     const accent = '#ffaa33'
 
     ctx.clearRect(0, 0, W, H)
@@ -154,7 +159,7 @@ export class TiltCalculator extends LitElement {
     ctx.stroke()
 
     // Ground label
-    ctx.font = '10px monospace'
+    ctx.font = `10px ${fontMono}`
     ctx.fillStyle = textMuted
     ctx.fillText(this._i18n.t('tilt.canvas_ground'), 4, groundY - 4)
 
@@ -226,7 +231,7 @@ export class TiltCalculator extends LitElement {
       ctx.lineWidth = 1.2
       ctx.stroke()
       ctx.setLineDash([])
-      ctx.font = '10px monospace'
+      ctx.font = `10px ${fontMono}`
       ctx.fillStyle = accent
       ctx.fillText(
         this._i18n.t('tilt.canvas_horizon', { pct: this._horizonPct().toFixed(0) }),
@@ -273,7 +278,7 @@ export class TiltCalculator extends LitElement {
     ctx.fill()
 
     // Speed label
-    ctx.font = '10px monospace'
+    ctx.font = `10px ${fontMono}`
     ctx.fillStyle = textColor
     ctx.fillText(`${this._speed} ${this._unit}`, quadX + 4, quadY - 10)
 
@@ -290,13 +295,15 @@ export class TiltCalculator extends LitElement {
     }
 
     // Tilt label
-    ctx.font = '10px monospace'
+    ctx.font = `10px ${fontMono}`
     ctx.fillStyle = primary
     ctx.fillText(
       this._i18n.t('tilt.canvas_tilt', { tilt: this._tilt }),
       quadX + 18,
       quadY + 16
     )
+
+    ctx.restore()
   }
 
   render() {

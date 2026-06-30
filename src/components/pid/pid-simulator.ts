@@ -373,8 +373,8 @@ export class PidSimulator extends LitElement {
         ? html`<span class="metric-null">${this._i18n.t('common.na')}</span>`
         : html`<span>${v.toFixed(digits)} ${unit}</span>`
 
-    const badgeVariant = (v: number | null, good: number, warn: number): 'success' | 'warning' | 'error' => {
-      if (v === null) return 'info'
+    const badgeVariant = (v: number | null, good: number, warn: number): string => {
+      if (v === null) return 'success'
       if (v <= good) return 'success'
       if (v <= warn) return 'warning'
       return 'error'
