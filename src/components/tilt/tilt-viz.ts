@@ -2,7 +2,26 @@ import { LitElement, html, css } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
 
+type V3 = [number, number, number]
+
 const DEG = Math.PI / 180
+const TAU = Math.PI * 2
+
+function rotX(p: V3, a: number): V3 {
+  const c = Math.cos(a), s = Math.sin(a)
+  return [p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c]
+}
+function rotY(p: V3, a: number): V3 {
+  const c = Math.cos(a), s = Math.sin(a)
+  return [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c]
+}
+
+function project(p: V3, focalLen: number, cx: number, cy: number): [number, number, number] {
+  const z = p[2] + focalLen
+  if (z < 0.1) return [cx, cy, 0]
+  const s = focalLen / z
+  return [cx + p[0] * s, cy - p[1] * s, s]
+}
 
 @customElement('tilt-viz')
 export class TiltViz extends LitElement {
@@ -11,14 +30,21 @@ export class TiltViz extends LitElement {
     css`
       :host {
         display: block;
-        min-height: 160px;
+        min-height: 200px;
         position: relative;
         background: var(--fpv-surface);
         border: 1px solid var(--fpv-border);
         border-radius: var(--fpv-radius-md);
         overflow: hidden;
       }
-      canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
     `,
   ]
 
@@ -37,9 +63,19 @@ export class TiltViz extends LitElement {
     const ctx = this._canvas.getContext('2d')
     if (!ctx) return
     this._ctx = ctx
-    this._observer = new ResizeObserver(() => this._resize())
+    this._observer = new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1
+      const w = this.offsetWidth, h = this.offsetHeight
+      if (!w || !h) return
+      this._canvas.width = Math.round(w * dpr)
+      this._canvas.height = Math.round(h * dpr)
+      this._dirty = true
+    })
     this._observer.observe(this)
-    this._resize()
+    const dpr = window.devicePixelRatio || 1
+    const w = this.offsetWidth || 400, h = this.offsetHeight || 240
+    this._canvas.width = Math.round(w * dpr)
+    this._canvas.height = Math.round(h * dpr)
     this._running = true
     this._loop()
   }
@@ -62,15 +98,6 @@ export class TiltViz extends LitElement {
     })
   }
 
-  private _resize() {
-    const dpr = window.devicePixelRatio || 1
-    const w = this.offsetWidth, h = this.offsetHeight
-    if (!w || !h) return
-    this._canvas.width = Math.round(w * dpr)
-    this._canvas.height = Math.round(h * dpr)
-    this._dirty = true
-  }
-
   private _draw() {
     const ctx = this._ctx, canvas = this._canvas
     if (!ctx || !canvas.width) return
@@ -84,86 +111,252 @@ export class TiltViz extends LitElement {
 
     const cs = getComputedStyle(this)
     const get = (v: string, fb: string) => cs.getPropertyValue(v).trim() || fb
-    const clrPrimary = get('--fpv-primary', '#00d4aa')
-    const clrBorder = get('--fpv-border', '#2a2a3a')
-    const clrText = get('--fpv-text', '#e0e0e8')
-    const clrMuted = get('--fpv-text-muted', '#8888a0')
-    const clrAccent = get('--fpv-accent', '#ff6b35')
-    const fontMono = get('--fpv-font-mono', 'JetBrains Mono, monospace')
-    const fontSans = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
+    const clrPrimary  = get('--fpv-primary', '#00d4aa')
+    const clrBorder   = get('--fpv-border', '#2a2a3e')
+    const clrMuted    = get('--fpv-text-muted', '#8888a0')
+    const clrAccent   = get('--fpv-accent', '#ff6b35')
+    const fontMono    = get('--fpv-font-mono', 'JetBrains Mono, monospace')
+    const fontSans    = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
 
-    const cx = W * 0.42, cy = H * 0.55
+    const cx = W * 0.5, cy = H * 0.52
+    const scale = Math.min(W, H) * 0.30
+    const focalLen = 4.0
 
-    // Ground / horizon line
-    ctx.strokeStyle = clrBorder
-    ctx.lineWidth = 1
-    ctx.setLineDash([4, 4])
-    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke()
-    ctx.setLineDash([])
-    ctx.font = `10px ${fontSans}`; ctx.fillStyle = clrMuted; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'
-    ctx.fillText('Horizon', 4, cy - 2)
+    // Camera view: slightly above and to the right, looking forward-left
+    const camPitch = -22 * DEG
+    const camYaw   =  28 * DEG
 
-    const scale = Math.min(W, H) * 0.22
-
-    // Quad body (centre rect)
-    const bodyW = scale * 0.3, bodyH = scale * 0.2
-    ctx.fillStyle = clrBorder
-    ctx.beginPath(); ctx.roundRect(cx - bodyW / 2, cy - bodyH / 2, bodyW, bodyH, 3); ctx.fill()
-
-    // Quad arms (X-frame)
-    const armLen = scale * 0.8
-    ctx.strokeStyle = clrBorder; ctx.lineWidth = 4; ctx.lineCap = 'round'
-    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-      ctx.beginPath()
-      ctx.moveTo(cx, cy)
-      ctx.lineTo(cx + dx * armLen * 0.5, cy + dy * armLen * 0.25)
-      ctx.stroke()
-      // Motor dot
-      ctx.beginPath(); ctx.arc(cx + dx * armLen * 0.5, cy + dy * armLen * 0.25, 5, 0, Math.PI * 2); ctx.fillStyle = clrBorder; ctx.fill()
+    const xform = (p: V3): [number, number, number] => {
+      let v = rotX(p, camPitch)
+      v = rotY(v, camYaw)
+      return project([v[0] * scale, v[1] * scale, v[2] * scale], focalLen * scale, cx, cy)
     }
 
-    // Camera rectangle (rotated by tiltDeg)
-    const camW = scale * 0.18, camH = scale * 0.12
+    // ── Ground plane grid ──────────────────────────────────────────────
+    const groundY = -0.55
+    ctx.globalAlpha = 0.12
+    ctx.strokeStyle = clrMuted
+    ctx.lineWidth = 0.5
+    for (let i = -4; i <= 4; i++) {
+      const t = (i / 4) * 1.8
+      const a = xform([t, groundY, -1.8]), b = xform([t, groundY, 1.8])
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
+      const c = xform([-1.8, groundY, t]), d = xform([1.8, groundY, t])
+      ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.stroke()
+    }
+    ctx.globalAlpha = 1
+
+    // ── Quad body + arms ───────────────────────────────────────────────
+    const armLen = 0.95
+    const motorPos: V3[] = [
+      [-armLen * 0.707, 0, -armLen * 0.707],
+      [ armLen * 0.707, 0, -armLen * 0.707],
+      [-armLen * 0.707, 0,  armLen * 0.707],
+      [ armLen * 0.707, 0,  armLen * 0.707],
+    ]
+    const cp = xform([0, 0, 0])
+
+    // Depth-sort drawables
+    type Drawable = { z: number; draw: () => void }
+    const drawables: Drawable[] = []
+
+    // Arms
+    for (let i = 0; i < 4; i++) {
+      const mp = xform(motorPos[i])
+      drawables.push({
+        z: (cp[2] + mp[2]) / 2,
+        draw: () => {
+          ctx.beginPath()
+          ctx.moveTo(cp[0], cp[1])
+          ctx.lineTo(mp[0], mp[1])
+          ctx.strokeStyle = clrBorder
+          ctx.lineWidth = 3.5
+          ctx.lineCap = 'round'
+          ctx.stroke()
+        },
+      })
+    }
+
+    // Body
+    drawables.push({
+      z: cp[2],
+      draw: () => {
+        ctx.beginPath()
+        ctx.arc(cp[0], cp[1], 0.18 * scale * cp[2], 0, TAU)
+        ctx.fillStyle = clrBorder
+        ctx.fill()
+      },
+    })
+
+    // Motors + prop discs
+    for (let i = 0; i < 4; i++) {
+      const mp = xform(motorPos[i])
+      drawables.push({
+        z: mp[2],
+        draw: () => {
+          const discR = 0.32 * scale * mp[2]
+          ctx.beginPath()
+          ctx.ellipse(mp[0], mp[1], discR, discR * 0.35, 0, 0, TAU)
+          ctx.fillStyle = clrMuted + '18'
+          ctx.strokeStyle = clrMuted + '50'
+          ctx.lineWidth = 1
+          ctx.fill(); ctx.stroke()
+          ctx.beginPath()
+          ctx.arc(mp[0], mp[1], 0.08 * scale * mp[2], 0, TAU)
+          ctx.fillStyle = clrMuted
+          ctx.fill()
+        },
+      })
+    }
+
+    // ── Camera mount on front-centre ───────────────────────────────────
+    // Camera sits on the nose, tilted by tiltDeg (pitch up = negative X rotation in model)
+    const camMountPos: V3 = [0, 0, -0.55]
     const tiltRad = this.tiltDeg * DEG
-    const camOriginX = cx, camOriginY = cy - bodyH / 2
+    const fovHalf = (this.fovDeg / 2) * DEG
+
+    // Camera box corners in camera-local space, then tilt, then place at mount
+    const camW = 0.12, camH = 0.10, camD = 0.08
+    const boxVerts: V3[] = [
+      [-camW, -camH, -camD], [ camW, -camH, -camD],
+      [ camW,  camH, -camD], [-camW,  camH, -camD],
+      [-camW, -camH,  camD], [ camW, -camH,  camD],
+      [ camW,  camH,  camD], [-camW,  camH,  camD],
+    ]
+    const tiltedBox = boxVerts.map(v => {
+      const tv = rotX(v, -tiltRad) // tilt around X axis
+      return [tv[0] + camMountPos[0], tv[1] + camMountPos[1], tv[2] + camMountPos[2]] as V3
+    })
+    const faces = [
+      [0,1,2,3], // back
+      [4,5,6,7], // front (lens side)
+      [0,1,5,4], // bottom
+      [2,3,7,6], // top
+      [0,3,7,4], // left
+      [1,2,6,5], // right
+    ]
+    const pbox = tiltedBox.map(v => xform(v))
+
+    // Sort faces back-to-front
+    const faceSorted = faces.map(f => ({
+      f,
+      z: f.reduce((s, i) => s + pbox[i][2], 0) / f.length,
+    })).sort((a, b) => a.z - b.z)
+
+    for (const { f } of faceSorted) {
+      const pts = f.map(i => pbox[i])
+      ctx.beginPath()
+      ctx.moveTo(pts[0][0], pts[0][1])
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1])
+      ctx.closePath()
+      ctx.fillStyle = clrPrimary + '28'
+      ctx.strokeStyle = clrPrimary + '90'
+      ctx.lineWidth = 1
+      ctx.fill(); ctx.stroke()
+    }
+
+    // Camera lens dot on front face
+    const lensCenter = tiltedBox[4].map((v, i) =>
+      (v + tiltedBox[5][i] + tiltedBox[6][i] + tiltedBox[7][i]) / 4
+    ) as V3
+    const lp = xform(lensCenter)
+    ctx.beginPath()
+    ctx.arc(lp[0], lp[1], 3 * lp[2], 0, TAU)
+    ctx.fillStyle = clrPrimary
+    ctx.fill()
+
+    // ── FOV cone ──────────────────────────────────────────────────────
+    // Two bounding rays from camera mount in tilt plane (XZ plane of quad)
+    const coneLen = 2.5
+    const topDir: V3 = rotX([0, 0, -1], -(tiltRad - fovHalf))
+    const botDir: V3 = rotX([0, 0, -1], -(tiltRad + fovHalf))
+    const topEnd: V3 = [
+      camMountPos[0] + topDir[0] * coneLen,
+      camMountPos[1] + topDir[1] * coneLen,
+      camMountPos[2] + topDir[2] * coneLen,
+    ]
+    const botEnd: V3 = [
+      camMountPos[0] + botDir[0] * coneLen,
+      camMountPos[1] + botDir[1] * coneLen,
+      camMountPos[2] + botDir[2] * coneLen,
+    ]
+
+    // Clamp bottom ray to ground
+    const groundBot: V3 = (() => {
+      if (botDir[1] < -0.001) {
+        const t = (groundY - camMountPos[1]) / botDir[1]
+        if (t > 0 && t < coneLen) {
+          return [
+            camMountPos[0] + botDir[0] * t,
+            groundY,
+            camMountPos[2] + botDir[2] * t,
+          ] as V3
+        }
+      }
+      return botEnd
+    })()
+
+    const mp0 = xform(camMountPos)
+    const tp  = xform(topEnd)
+    const bp  = xform(groundBot)
 
     ctx.save()
-    ctx.translate(camOriginX, camOriginY)
-    ctx.rotate(-tiltRad)
-    ctx.strokeStyle = clrPrimary; ctx.lineWidth = 2
-    ctx.beginPath(); ctx.roundRect(-camW / 2, -camH / 2, camW, camH, 2); ctx.stroke()
+    ctx.globalAlpha = 0.18
+    ctx.fillStyle = clrAccent
+    ctx.beginPath()
+    ctx.moveTo(mp0[0], mp0[1])
+    ctx.lineTo(tp[0],  tp[1])
+    ctx.lineTo(bp[0],  bp[1])
+    ctx.closePath()
+    ctx.fill()
+    ctx.globalAlpha = 1
+
+    ctx.strokeStyle = clrAccent
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([4, 4])
+    ctx.beginPath(); ctx.moveTo(mp0[0], mp0[1]); ctx.lineTo(tp[0],  tp[1]); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(mp0[0], mp0[1]); ctx.lineTo(bp[0],  bp[1]); ctx.stroke()
+    ctx.setLineDash([])
+
+    // Ground contact dot where bottom ray hits
+    if (groundBot[1] <= groundY + 0.01) {
+      ctx.beginPath()
+      ctx.arc(bp[0], bp[1], 4, 0, TAU)
+      ctx.fillStyle = clrAccent
+      ctx.fill()
+    }
     ctx.restore()
 
-    // Tilt arc
-    const arcR = scale * 0.35
-    ctx.strokeStyle = clrPrimary + '80'; ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.arc(camOriginX, camOriginY, arcR, -Math.PI / 2 - tiltRad, -Math.PI / 2)
-    ctx.stroke()
+    // ── Horizon ray (centre of FOV) ────────────────────────────────────
+    const midDir: V3 = rotX([0, 0, -1], -tiltRad)
+    const midEnd: V3 = [
+      camMountPos[0] + midDir[0] * coneLen * 0.7,
+      camMountPos[1] + midDir[1] * coneLen * 0.7,
+      camMountPos[2] + midDir[2] * coneLen * 0.7,
+    ]
+    const midP = xform(midEnd)
+    ctx.strokeStyle = clrPrimary
+    ctx.lineWidth = 1.5
+    ctx.globalAlpha = 0.6
+    ctx.beginPath(); ctx.moveTo(mp0[0], mp0[1]); ctx.lineTo(midP[0], midP[1]); ctx.stroke()
+    ctx.globalAlpha = 1
 
-    // Tilt angle label
-    ctx.font = `bold 12px ${fontMono}`; ctx.fillStyle = clrPrimary; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'
-    ctx.fillText(`${this.tiltDeg.toFixed(1)}°`, camOriginX - arcR - 4, camOriginY - arcR / 2)
+    // ── Sort and draw depth-sorted quad pieces ─────────────────────────
+    drawables.sort((a, b) => a.z - b.z)
+    for (const d of drawables) d.draw()
 
-    // FOV cone from camera centre
-    const fovRad = this.fovDeg * DEG / 2
-    const coneLen = scale * 1.2
-    const fovDir = -tiltRad // pointing direction in canvas space
+    // ── Labels ─────────────────────────────────────────────────────────
+    ctx.font = `bold 12px ${fontMono}`
+    ctx.fillStyle = clrPrimary
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'top'
+    ctx.fillText(`${this.tiltDeg.toFixed(1)}°`, W - 10, 10)
 
-    ctx.save()
-    ctx.translate(camOriginX, camOriginY)
-    ctx.rotate(-tiltRad)
-    ctx.beginPath()
-    ctx.moveTo(0, 0)
-    ctx.lineTo(-Math.sin(fovRad) * coneLen, -Math.cos(fovRad) * coneLen)
-    ctx.moveTo(0, 0)
-    ctx.lineTo(Math.sin(fovRad) * coneLen, -Math.cos(fovRad) * coneLen)
-    ctx.strokeStyle = clrAccent + '50'; ctx.lineWidth = 1; ctx.stroke()
-    ctx.restore()
-
-    // FOV label
-    ctx.font = `10px ${fontSans}`; ctx.fillStyle = clrAccent; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
-    ctx.fillText(`FOV ${this.fovDeg}°`, W - 8, 8)
+    ctx.font = `11px ${fontSans}`
+    ctx.fillStyle = clrAccent
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'top'
+    ctx.fillText(`FOV ${this.fovDeg}°`, W - 10, 28)
 
     ctx.restore()
   }

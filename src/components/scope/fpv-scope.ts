@@ -330,12 +330,12 @@ export class FpvScope extends LitElement {
     ctx.fillStyle = surface
     ctx.fillRect(0, 0, W, H)
 
-    this._drawGrid(ctx, W, H, border, textMuted, fontLabel)
+    this._drawGrid(ctx, W, H, border, textMuted, fontLabel, fontMono)
     this._drawMetrics(ctx, W, H, textMuted, surface2, fontLabel)
     this._drawSeries(ctx, W, H)
 
     if (this._hoverX >= 0 && this._hoverX <= W) {
-      this._drawCursor(ctx, W, H, surface2, fontLabel)
+      this._drawCursor(ctx, W, H, surface2, fontLabel, fontMono)
     }
 
     ctx.restore()
@@ -346,7 +346,7 @@ export class FpvScope extends LitElement {
   private _drawGrid(
     ctx: CanvasRenderingContext2D,
     W: number, H: number,
-    border: string, textMuted: string, fontLabel: string,
+    border: string, textMuted: string, fontLabel: string, fontMono: string,
   ) {
     const divs  = this.gridDivisions
     const minor = divs * 5
@@ -531,7 +531,7 @@ export class FpvScope extends LitElement {
   private _drawCursor(
     ctx: CanvasRenderingContext2D,
     W: number, H: number,
-    surface2: string, fontLabel: string,
+    surface2: string, fontLabel: string, fontMono: string,
   ) {
     const x   = this._hoverX
     const tMs = this._xToTime(x)
