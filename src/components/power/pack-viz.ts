@@ -175,12 +175,12 @@ export class PackViz extends LitElement {
     const cellRgb = `${cr},${cg},${cb}`
 
     const cx = W * 0.5, cy = H * 0.46
-    const focalLen = 4.5
+    const focalLen = 4.0
     const camPitch = this._camPitch
     const camYaw   = this._camYaw
 
-    const gridSpan = Math.max(S, P) * 0.85
-    const scale = Math.min(W, H) / gridSpan * 0.36
+    // Scale so each cell stays legible: larger packs shrink slightly
+    const scale = Math.min(W, H) / Math.max(S, P, 2) * 1.25
 
     const xform = (p: V3): [number, number, number] => {
       let v = rotX(p, camPitch)

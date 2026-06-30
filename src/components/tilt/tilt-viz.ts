@@ -162,7 +162,7 @@ export class TiltViz extends LitElement {
     const fontSans    = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
 
     const cx = W * 0.5, cy = H * 0.52
-    const scale = Math.min(W, H) * 0.30
+    const scale = Math.min(W, H) * 0.32
     const focalLen = 4.0
 
     // Camera view (orbit-controlled)
@@ -310,7 +310,7 @@ export class TiltViz extends LitElement {
 
     // ── FOV cone ──────────────────────────────────────────────────────
     // Two bounding rays from camera mount in tilt plane (XZ plane of quad)
-    const coneLen = 2.5
+    const coneLen = 1.7
     const topDir: V3 = rotX([0, 0, -1], -(tiltRad - fovHalf))
     const botDir: V3 = rotX([0, 0, -1], -(tiltRad + fovHalf))
     const topEnd: V3 = [

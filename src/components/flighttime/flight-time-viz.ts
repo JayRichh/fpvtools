@@ -165,7 +165,7 @@ export class FlightTimeViz extends LitElement {
     const fontSans   = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
 
     const cx = W * 0.5, cy = H * 0.53
-    const scale = Math.min(W, H) * 0.28
+    const scale = Math.min(W, H) * 0.32
     const focalLen = 4.0
 
     // Camera view (orbit-controlled)
@@ -273,8 +273,8 @@ export class FlightTimeViz extends LitElement {
     }
 
     // ── Quad X-frame ────────────────────────────────────────────────────────
-    const quadY = 0.15  // floating slightly above ground
-    const armLen = 0.9
+    const quadY = 0.15
+    const armLen = 0.95
 
     const motorPos: V3[] = [
       [-armLen * 0.707, quadY,  -armLen * 0.707],

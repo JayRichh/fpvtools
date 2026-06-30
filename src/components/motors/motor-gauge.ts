@@ -174,8 +174,8 @@ export class MotorGauge extends LitElement {
     const thrustH = clamp(tw / 5, 0, 1.1)  // column height per motor
 
     // ── 3D scene ─────────────────────────────────────────────────────────────
-    const cx = W * 0.5, cy = H * 0.48
-    const scale = Math.min(W, H) * 0.26
+    const cx = W * 0.5, cy = H * 0.50
+    const scale = Math.min(W, H) * 0.32
     const focalLen = 4.0
     const camPitch = this._camPitch
     const camYaw   = this._camYaw
@@ -193,15 +193,15 @@ export class MotorGauge extends LitElement {
     ctx.strokeStyle = clrMuted
     ctx.lineWidth = 0.5
     for (let i = -4; i <= 4; i++) {
-      const t = (i / 4) * 1.6
-      const a = xform([t, groundY, -1.6]), b = xform([t, groundY, 1.6])
+      const t = (i / 4) * 1.4
+      const a = xform([t, groundY, -1.4]), b = xform([t, groundY, 1.4])
       ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
-      const c = xform([-1.6, groundY, t]), d = xform([1.6, groundY, t])
+      const c = xform([-1.4, groundY, t]), d = xform([1.4, groundY, t])
       ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.stroke()
     }
     ctx.globalAlpha = 1
 
-    const armLen = 0.82
+    const armLen = 0.95
     const motorPos: V3[] = [
       [-armLen * 0.707, 0, -armLen * 0.707],
       [ armLen * 0.707, 0, -armLen * 0.707],
