@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from '@/app/composables/useI18n'
 import '@components/power/pack-calculator.js'
+
+const { t } = useI18n()
 </script>
 <template>
   <div class="power-view">
-    <h1>Pack Calculator</h1>
-    <p class="subtitle">Li-ion and LiPo pack sizing — flight time, voltage sag, C-rate, and range.</p>
+    <h1>{{ t('power.title') }}</h1>
+    <p class="subtitle">{{ t('power.subtitle') }}</p>
     <pack-calculator></pack-calculator>
   </div>
 </template>

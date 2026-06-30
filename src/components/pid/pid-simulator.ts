@@ -308,9 +308,9 @@ export class PidSimulator extends LitElement {
       error[i]    = samples[i].errorDegS
     }
     return [
-      { name: 'Setpoint', color: COLOR_SETPOINT, data: setpoint, visible: true },
-      { name: 'Gyro',     color: COLOR_GYRO,     data: gyro,     visible: true },
-      { name: 'Error',    color: COLOR_ERROR,     data: error,    visible: true },
+      { name: this._i18n.t('pid.series_setpoint'), color: COLOR_SETPOINT, data: setpoint, visible: true },
+      { name: this._i18n.t('pid.series_gyro'),     color: COLOR_GYRO,     data: gyro,     visible: true },
+      { name: this._i18n.t('pid.series_error'),    color: COLOR_ERROR,    data: error,    visible: true },
     ]
   }
 
@@ -329,10 +329,10 @@ export class PidSimulator extends LitElement {
       motor[i] = samples[i].motorOutput
     }
     return [
-      { name: 'P-term', color: COLOR_P,     data: p,     visible: true },
-      { name: 'I-term', color: COLOR_I,     data: iArr,  visible: true },
-      { name: 'D-term', color: COLOR_D,     data: d,     visible: true },
-      { name: 'Motor',  color: COLOR_MOTOR, data: motor, visible: false },
+      { name: this._i18n.t('pid.series_pterm'), color: COLOR_P,     data: p,     visible: true },
+      { name: this._i18n.t('pid.series_iterm'), color: COLOR_I,     data: iArr,  visible: true },
+      { name: this._i18n.t('pid.series_dterm'), color: COLOR_D,     data: d,     visible: true },
+      { name: this._i18n.t('pid.series_motor'), color: COLOR_MOTOR, data: motor, visible: false },
     ]
   }
 
@@ -370,7 +370,7 @@ export class PidSimulator extends LitElement {
 
     const fmt = (v: number | null, unit: string, digits = 1) =>
       v === null
-        ? html`<span class="metric-null">N/A</span>`
+        ? html`<span class="metric-null">${this._i18n.t('common.na')}</span>`
         : html`<span>${v.toFixed(digits)} ${unit}</span>`
 
     const badgeVariant = (v: number | null, good: number, warn: number): 'success' | 'warning' | 'error' => {
@@ -383,45 +383,45 @@ export class PidSimulator extends LitElement {
     return html`
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-label">Rise Time</div>
+          <div class="metric-label">${this._i18n.t('pid.metric_rise_time')}</div>
           <div class="metric-value">${fmt(m.riseTimeMs, 'ms')}</div>
           ${m.riseTimeMs !== null ? html`<fpv-badge .variant=${badgeVariant(m.riseTimeMs, 30, 80)}>
-            ${m.riseTimeMs <= 30 ? 'Fast' : m.riseTimeMs <= 80 ? 'OK' : 'Slow'}
+            ${m.riseTimeMs <= 30 ? this._i18n.t('common.status_fast') : m.riseTimeMs <= 80 ? this._i18n.t('common.status_ok') : this._i18n.t('common.status_slow')}
           </fpv-badge>` : ''}
         </div>
         <div class="metric-card">
-          <div class="metric-label">Overshoot</div>
+          <div class="metric-label">${this._i18n.t('pid.metric_overshoot')}</div>
           <div class="metric-value">${fmt(m.overshootPct, '%')}</div>
           ${m.overshootPct !== null ? html`<fpv-badge .variant=${badgeVariant(m.overshootPct, 5, 20)}>
-            ${m.overshootPct <= 5 ? 'Good' : m.overshootPct <= 20 ? 'Moderate' : 'High'}
+            ${m.overshootPct <= 5 ? this._i18n.t('common.status_good') : m.overshootPct <= 20 ? this._i18n.t('common.status_moderate') : this._i18n.t('common.status_high')}
           </fpv-badge>` : ''}
         </div>
         <div class="metric-card">
-          <div class="metric-label">Settling Time</div>
+          <div class="metric-label">${this._i18n.t('pid.metric_settling_time')}</div>
           <div class="metric-value">${fmt(m.settlingTimeMs, 'ms')}</div>
           ${m.settlingTimeMs !== null ? html`<fpv-badge .variant=${badgeVariant(m.settlingTimeMs, 100, 300)}>
-            ${m.settlingTimeMs <= 100 ? 'Fast' : m.settlingTimeMs <= 300 ? 'OK' : 'Slow'}
+            ${m.settlingTimeMs <= 100 ? this._i18n.t('common.status_fast') : m.settlingTimeMs <= 300 ? this._i18n.t('common.status_ok') : this._i18n.t('common.status_slow')}
           </fpv-badge>` : ''}
         </div>
         <div class="metric-card">
-          <div class="metric-label">SS Error</div>
+          <div class="metric-label">${this._i18n.t('pid.metric_ss_error')}</div>
           <div class="metric-value">${fmt(m.steadyStateErrorDegS, '°/s', 2)}</div>
           ${m.steadyStateErrorDegS !== null ? html`<fpv-badge .variant=${badgeVariant(Math.abs(m.steadyStateErrorDegS), 2, 10)}>
-            ${Math.abs(m.steadyStateErrorDegS) <= 2 ? 'Good' : Math.abs(m.steadyStateErrorDegS) <= 10 ? 'Fair' : 'Poor'}
+            ${Math.abs(m.steadyStateErrorDegS) <= 2 ? this._i18n.t('common.status_good') : Math.abs(m.steadyStateErrorDegS) <= 10 ? this._i18n.t('common.status_fair') : this._i18n.t('common.status_poor')}
           </fpv-badge>` : ''}
         </div>
         <div class="metric-card">
-          <div class="metric-label">Oscillation</div>
+          <div class="metric-label">${this._i18n.t('pid.metric_oscillation')}</div>
           <div class="metric-value">${fmt(m.oscillationHz, 'Hz')}</div>
           ${m.oscillationHz !== null ? html`<fpv-badge .variant=${badgeVariant(m.oscillationHz, 5, 20)}>
-            ${m.oscillationHz <= 5 ? 'Stable' : m.oscillationHz <= 20 ? 'Moderate' : 'Oscillating'}
+            ${m.oscillationHz <= 5 ? this._i18n.t('common.status_stable') : m.oscillationHz <= 20 ? this._i18n.t('common.status_moderate') : this._i18n.t('common.status_oscillating')}
           </fpv-badge>` : ''}
         </div>
         <div class="metric-card">
-          <div class="metric-label">Motor RMS</div>
+          <div class="metric-label">${this._i18n.t('pid.metric_motor_rms')}</div>
           <div class="metric-value">${m.motorActivityRms.toFixed(3)} Nm</div>
           <fpv-badge .variant=${badgeVariant(m.motorActivityRms, 0.1, 0.3)}>
-            ${m.motorActivityRms <= 0.1 ? 'Smooth' : m.motorActivityRms <= 0.3 ? 'Normal' : 'Active'}
+            ${m.motorActivityRms <= 0.1 ? this._i18n.t('common.status_smooth') : m.motorActivityRms <= 0.3 ? this._i18n.t('common.status_normal') : this._i18n.t('common.status_active')}
           </fpv-badge>
         </div>
       </div>
@@ -455,7 +455,11 @@ export class PidSimulator extends LitElement {
         <div class="viz-col">
           <fpv-card>
             <fpv-tabs
-              .tabs=${['Response', 'Terms', 'Metrics']}
+              .tabs=${[
+                this._i18n.t('pid.tab_response'),
+                this._i18n.t('pid.tab_terms'),
+                this._i18n.t('pid.tab_metrics'),
+              ]}
               .active=${this._activeTab}
               @tab-change=${(e: CustomEvent<number>) => { this._activeTab = e.detail }}
             ></fpv-tabs>

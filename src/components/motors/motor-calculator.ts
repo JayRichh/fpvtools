@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import { computeSizing, MOTOR_LIBRARY, PROP_LIBRARY } from '@core/motors/sizing'
 import type { MotorSpec, PropSpec, SizingResult } from '@core/motors/types'
 import '../primitives/index.js'
@@ -87,6 +88,9 @@ export class MotorCalculator extends LitElement {
     `,
   ]
 
+  // ── i18n ───────────────────────────────────────────────────────────────────
+  private _i18n = new I18nController(this)
+
   // ── State ──────────────────────────────────────────────────────────────────
 
   @state() private _motorKey = 'iFlight 2806.5 1300KV'
@@ -154,15 +158,15 @@ export class MotorCalculator extends LitElement {
 
   private _renderMotorSection() {
     const motorOptions = [
-      { value: '__custom__', label: 'Custom...' },
+      { value: '__custom__', label: this._i18n.t('motors.motor_custom') },
       ...Object.keys(MOTOR_LIBRARY).map((k) => ({ value: k, label: k })),
     ]
 
     return html`
-      <fpv-card header="Motor">
+      <fpv-card .header=${this._i18n.t('common.motor')}>
         <div class="rows">
           <fpv-select
-            label="Motor"
+            .label=${this._i18n.t('common.motor')}
             .value=${this._useCustomMotor ? '__custom__' : this._motorKey}
             .options=${motorOptions}
             @select-change=${(e: CustomEvent<string>) => {
@@ -177,7 +181,7 @@ export class MotorCalculator extends LitElement {
           ${this._useCustomMotor
             ? html`
                 <fpv-number
-                  label="KV"
+                  .label=${this._i18n.t('motors.label_kv')}
                   .value=${this._customMotorKv}
                   min="50"
                   max="10000"
@@ -186,7 +190,7 @@ export class MotorCalculator extends LitElement {
                   @value-change=${(e: CustomEvent<number>) => (this._customMotorKv = e.detail)}
                 ></fpv-number>
                 <fpv-number
-                  label="Max I"
+                  .label=${this._i18n.t('motors.label_max_i')}
                   .value=${this._customMotorMaxA}
                   min="1"
                   max="120"
@@ -195,7 +199,7 @@ export class MotorCalculator extends LitElement {
                   @value-change=${(e: CustomEvent<number>) => (this._customMotorMaxA = e.detail)}
                 ></fpv-number>
                 <fpv-number
-                  label="Weight"
+                  .label=${this._i18n.t('common.weight')}
                   .value=${this._customMotorWeightG}
                   min="1"
                   max="500"
@@ -212,15 +216,15 @@ export class MotorCalculator extends LitElement {
 
   private _renderPropSection() {
     const propOptions = [
-      { value: '__custom__', label: 'Custom...' },
+      { value: '__custom__', label: this._i18n.t('motors.motor_custom') },
       ...Object.keys(PROP_LIBRARY).map((k) => ({ value: k, label: k })),
     ]
 
     return html`
-      <fpv-card header="Propeller">
+      <fpv-card .header=${this._i18n.t('motors.section_propeller')}>
         <div class="rows">
           <fpv-select
-            label="Prop"
+            .label=${this._i18n.t('motors.label_prop')}
             .value=${this._useCustomProp ? '__custom__' : this._propKey}
             .options=${propOptions}
             @select-change=${(e: CustomEvent<string>) => {
@@ -235,7 +239,7 @@ export class MotorCalculator extends LitElement {
           ${this._useCustomProp
             ? html`
                 <fpv-number
-                  label="Diameter"
+                  .label=${this._i18n.t('motors.label_diameter')}
                   .value=${this._customPropDiam}
                   min="1"
                   max="30"
@@ -244,7 +248,7 @@ export class MotorCalculator extends LitElement {
                   @value-change=${(e: CustomEvent<number>) => (this._customPropDiam = e.detail)}
                 ></fpv-number>
                 <fpv-number
-                  label="Pitch"
+                  .label=${this._i18n.t('motors.label_pitch')}
                   .value=${this._customPropPitch}
                   min="0.5"
                   max="20"
@@ -261,10 +265,10 @@ export class MotorCalculator extends LitElement {
 
   private _renderSetupSection() {
     return html`
-      <fpv-card header="Setup">
+      <fpv-card .header=${this._i18n.t('common.setup')}>
         <div class="rows">
           <fpv-number
-            label="Cell Count"
+            .label=${this._i18n.t('motors.label_cell_count')}
             .value=${this._cellCount}
             min="1"
             max="14"
@@ -273,7 +277,7 @@ export class MotorCalculator extends LitElement {
             @value-change=${(e: CustomEvent<number>) => (this._cellCount = e.detail)}
           ></fpv-number>
           <fpv-number
-            label="AUW"
+            .label=${this._i18n.t('common.auw')}
             .value=${this._auwG}
             min="50"
             max="30000"
@@ -282,13 +286,13 @@ export class MotorCalculator extends LitElement {
             @value-change=${(e: CustomEvent<number>) => (this._auwG = e.detail)}
           ></fpv-number>
           <fpv-select
-            label="Motors"
+            .label=${this._i18n.t('motors.label_motors')}
             .value=${String(this._motorCount)}
             .options=${[
-              { value: '3', label: '3 motors (tricopter)' },
-              { value: '4', label: '4 motors (quad)' },
-              { value: '6', label: '6 motors (hex)' },
-              { value: '8', label: '8 motors (octo)' },
+              { value: '3', label: this._i18n.t('motors.motors_3') },
+              { value: '4', label: this._i18n.t('motors.motors_4') },
+              { value: '6', label: this._i18n.t('motors.motors_6') },
+              { value: '8', label: this._i18n.t('motors.motors_8') },
             ]}
             @select-change=${(e: CustomEvent<string>) => (this._motorCount = Number(e.detail))}
           ></fpv-select>
@@ -302,55 +306,55 @@ export class MotorCalculator extends LitElement {
     const twVariant = this._twVariant(r.thrustToWeight)
 
     return html`
-      <fpv-card header="Results">
+      <fpv-card .header=${this._i18n.t('common.results')}>
         <div class="result-header">
-          <span class="result-label">Thrust / Weight</span>
+          <span class="result-label">${this._i18n.t('motors.result_tw')}</span>
           <fpv-badge .variant=${twVariant}>${r.thrustToWeight.toFixed(2)}:1</fpv-badge>
         </div>
         <div class="rows">
           <div class="result-row">
-            <span class="result-label">Nominal Voltage</span>
+            <span class="result-label">${this._i18n.t('motors.result_nominal_v')}</span>
             <span class="result-value">${r.nominalV.toFixed(1)} V</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Max RPM</span>
+            <span class="result-label">${this._i18n.t('motors.result_max_rpm')}</span>
             <span class="result-value">${r.maxRpm.toLocaleString()} RPM</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Thrust / Motor</span>
+            <span class="result-label">${this._i18n.t('motors.result_thrust_per_motor')}</span>
             <span class="result-value">${r.thrustPerMotorG} g</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Total Thrust</span>
+            <span class="result-label">${this._i18n.t('motors.result_total_thrust')}</span>
             <span class="result-value">${r.totalThrustG} g</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Hover Throttle</span>
+            <span class="result-label">${this._i18n.t('motors.result_hover_throttle')}</span>
             <span class="result-value">${r.hoverThrottlePct} %</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Hover I / Motor</span>
+            <span class="result-label">${this._i18n.t('motors.result_hover_i_per_motor')}</span>
             <span class="result-value">${r.hoverCurrentPerMotorA} A</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Total Hover I</span>
+            <span class="result-label">${this._i18n.t('motors.result_total_hover_i')}</span>
             <span class="result-value">${r.totalHoverCurrentA} A</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Efficiency</span>
+            <span class="result-label">${this._i18n.t('motors.result_efficiency')}</span>
             <span class="result-value">${r.efficiencyGPerW} g/W</span>
           </div>
           ${r.recommendedPropRange
             ? html`
                 <div class="result-row">
-                  <span class="result-label">Rec. Props</span>
+                  <span class="result-label">${this._i18n.t('motors.result_rec_props')}</span>
                   <span class="result-value">${r.recommendedPropRange}</span>
                 </div>
               `
             : ''}
         </div>
         <p class="disclaimer">
-          Thrust is estimated — verify against manufacturer dyno data before building.
+          ${this._i18n.t('motors.disclaimer')}
         </p>
       </fpv-card>
     `

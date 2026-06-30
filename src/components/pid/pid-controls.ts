@@ -98,15 +98,15 @@ export class PidControls extends LitElement {
   private _renderGains() {
     const g = this.config.controller.gains
     return html`
-      <fpv-card header="Gains">
+      <fpv-card .header=${this._i18n.t('pid.section_gains')}>
         <div class="rows">
-          <fpv-slider label="P Gain" .value=${g.kp} min="0" max="200" step="1"
+          <fpv-slider .label=${this._i18n.t('pid.label_p_gain')} .value=${g.kp} min="0" max="200" step="1"
             @value-change=${(e: CustomEvent<number>) => this._emitGains({ kp: e.detail })}></fpv-slider>
-          <fpv-slider label="I Gain" .value=${g.ki} min="0" max="200" step="1"
+          <fpv-slider .label=${this._i18n.t('pid.label_i_gain')} .value=${g.ki} min="0" max="200" step="1"
             @value-change=${(e: CustomEvent<number>) => this._emitGains({ ki: e.detail })}></fpv-slider>
-          <fpv-slider label="D Gain" .value=${g.kd} min="0" max="100" step="1"
+          <fpv-slider .label=${this._i18n.t('pid.label_d_gain')} .value=${g.kd} min="0" max="100" step="1"
             @value-change=${(e: CustomEvent<number>) => this._emitGains({ kd: e.detail })}></fpv-slider>
-          <fpv-slider label="FF Gain" .value=${g.kff} min="0" max="200" step="1"
+          <fpv-slider .label=${this._i18n.t('pid.label_ff_gain')} .value=${g.kff} min="0" max="200" step="1"
             @value-change=${(e: CustomEvent<number>) => this._emitGains({ kff: e.detail })}></fpv-slider>
         </div>
       </fpv-card>
@@ -117,13 +117,13 @@ export class PidControls extends LitElement {
     const f = this.config.controller.filters
     const notchEnabled = !!f.notch
     return html`
-      <fpv-card header="Filters">
+      <fpv-card .header=${this._i18n.t('pid.section_filters')}>
         <div class="rows">
-          <fpv-number label="Gyro LP" .value=${f.gyroLowpassHz} min="50" max="500" step="1" unit="Hz"
+          <fpv-number .label=${this._i18n.t('pid.label_gyro_lp')} .value=${f.gyroLowpassHz} min="50" max="500" step="1" unit="Hz"
             @value-change=${(e: CustomEvent<number>) => this._emitFilters({ gyroLowpassHz: e.detail })}></fpv-number>
-          <fpv-number label="D-Term LP" .value=${f.dtermLowpassHz} min="50" max="300" step="1" unit="Hz"
+          <fpv-number .label=${this._i18n.t('pid.label_dterm_lp')} .value=${f.dtermLowpassHz} min="50" max="300" step="1" unit="Hz"
             @value-change=${(e: CustomEvent<number>) => this._emitFilters({ dtermLowpassHz: e.detail })}></fpv-number>
-          <fpv-toggle label="Notch Filter" .checked=${notchEnabled}
+          <fpv-toggle .label=${this._i18n.t('pid.label_notch_filter')} .checked=${notchEnabled}
             @toggle-change=${(e: CustomEvent<boolean>) => {
               if (e.detail) {
                 this._emitFilters({ notch: { centerHz: 200, q: 2.5 } })
@@ -134,9 +134,9 @@ export class PidControls extends LitElement {
             }}></fpv-toggle>
           ${notchEnabled && f.notch ? html`
             <div class="notch-inner">
-              <fpv-number label="Center" .value=${f.notch.centerHz} min="50" max="500" step="1" unit="Hz"
+              <fpv-number .label=${this._i18n.t('pid.label_center')} .value=${f.notch.centerHz} min="50" max="500" step="1" unit="Hz"
                 @value-change=${(e: CustomEvent<number>) => this._emitFilters({ notch: { ...f.notch!, centerHz: e.detail } })}></fpv-number>
-              <fpv-number label="Q" .value=${f.notch.q} min="0.1" max="10" step="0.1"
+              <fpv-number .label=${this._i18n.t('pid.label_q')} .value=${f.notch.q} min="0.1" max="10" step="0.1"
                 @value-change=${(e: CustomEvent<number>) => this._emitFilters({ notch: { ...f.notch!, q: e.detail } })}></fpv-number>
             </div>
           ` : ''}
@@ -147,13 +147,13 @@ export class PidControls extends LitElement {
 
   private _renderLoopRate() {
     return html`
-      <fpv-card header="Loop Rate">
-        <fpv-select label="Rate"
+      <fpv-card .header=${this._i18n.t('pid.section_loop_rate')}>
+        <fpv-select .label=${this._i18n.t('pid.label_rate')}
           .value=${String(this.config.controller.loopRateHz)}
           .options=${[
-            { value: '8000', label: '8 kHz' },
-            { value: '4000', label: '4 kHz' },
-            { value: '2000', label: '2 kHz' },
+            { value: '8000', label: this._i18n.t('pid.rate_8khz') },
+            { value: '4000', label: this._i18n.t('pid.rate_4khz') },
+            { value: '2000', label: this._i18n.t('pid.rate_2khz') },
           ]}
           @select-change=${(e: CustomEvent<string>) =>
             this._emitController({ loopRateHz: Number(e.detail) })
@@ -178,13 +178,13 @@ export class PidControls extends LitElement {
 
     const plantOptions = [
       ...plantKeys.map(k => ({ value: k, label: k })),
-      { value: 'Custom', label: 'Custom' },
+      { value: 'Custom', label: this._i18n.t('pid.plant_custom') },
     ]
 
     return html`
-      <fpv-card header="Plant">
+      <fpv-card .header=${this._i18n.t('pid.section_plant')}>
         <div class="rows">
-          <fpv-select label="Preset"
+          <fpv-select .label=${this._i18n.t('pid.label_preset')}
             .value=${selectedPlant}
             .options=${plantOptions}
             @select-change=${(e: CustomEvent<string>) => {
@@ -193,13 +193,13 @@ export class PidControls extends LitElement {
               }
             }}></fpv-select>
           ${selectedPlant === 'Custom' ? html`
-            <fpv-number label="Inertia" .value=${p.inertiaKgM2} min="0.00001" max="0.01" step="0.00001"
+            <fpv-number .label=${this._i18n.t('pid.label_inertia')} .value=${p.inertiaKgM2} min="0.00001" max="0.01" step="0.00001"
               @value-change=${(e: CustomEvent<number>) => this._emit({ plant: { ...p, inertiaKgM2: e.detail } })}></fpv-number>
-            <fpv-number label="Motor τ" .value=${p.motorTimeConstantMs} min="1" max="50" step="0.5" unit="ms"
+            <fpv-number .label=${this._i18n.t('pid.label_motor_tau')} .value=${p.motorTimeConstantMs} min="1" max="50" step="0.5" unit="ms"
               @value-change=${(e: CustomEvent<number>) => this._emit({ plant: { ...p, motorTimeConstantMs: e.detail } })}></fpv-number>
-            <fpv-number label="Drag" .value=${p.dragCoeff} min="0" max="0.1" step="0.001"
+            <fpv-number .label=${this._i18n.t('pid.label_drag')} .value=${p.dragCoeff} min="0" max="0.1" step="0.001"
               @value-change=${(e: CustomEvent<number>) => this._emit({ plant: { ...p, dragCoeff: e.detail } })}></fpv-number>
-            <fpv-number label="Max Torque" .value=${p.maxTorqueNm} min="0.01" max="2" step="0.01" unit="Nm"
+            <fpv-number .label=${this._i18n.t('pid.label_max_torque')} .value=${p.maxTorqueNm} min="0.01" max="2" step="0.01" unit="Nm"
               @value-change=${(e: CustomEvent<number>) => this._emit({ plant: { ...p, maxTorqueNm: e.detail } })}></fpv-number>
           ` : ''}
         </div>
@@ -210,14 +210,14 @@ export class PidControls extends LitElement {
   private _renderSetpoint() {
     const sp = this.config.setpoint
     const profileOptions = [
-      { value: 'step', label: 'Step' },
-      { value: 'ramp', label: 'Ramp' },
-      { value: 'sine', label: 'Sine' },
+      { value: 'step', label: this._i18n.t('pid.profile_step') },
+      { value: 'ramp', label: this._i18n.t('pid.profile_ramp') },
+      { value: 'sine', label: this._i18n.t('pid.profile_sine') },
     ]
     return html`
-      <fpv-card header="Setpoint">
+      <fpv-card .header=${this._i18n.t('pid.section_setpoint')}>
         <div class="rows">
-          <fpv-select label="Profile"
+          <fpv-select .label=${this._i18n.t('pid.label_profile')}
             .value=${sp.kind === 'trace' ? 'step' : sp.kind}
             .options=${profileOptions}
             @select-change=${(e: CustomEvent<string>) => {
@@ -232,21 +232,21 @@ export class PidControls extends LitElement {
               }
             }}></fpv-select>
           ${'amplitudeDegS' in sp ? html`
-            <fpv-number label="Amplitude" .value=${sp.amplitudeDegS} min="0" max="2000" step="10" unit="°/s"
+            <fpv-number .label=${this._i18n.t('pid.label_amplitude')} .value=${sp.amplitudeDegS} min="0" max="2000" step="10" unit="°/s"
               @value-change=${(e: CustomEvent<number>) => this._emitSetpoint({ amplitudeDegS: e.detail })}></fpv-number>
           ` : ''}
           ${sp.kind === 'step' ? html`
-            <fpv-number label="Start" .value=${sp.startMs} min="0" max="1000" step="10" unit="ms"
+            <fpv-number .label=${this._i18n.t('pid.label_start')} .value=${sp.startMs} min="0" max="1000" step="10" unit="ms"
               @value-change=${(e: CustomEvent<number>) => this._emitSetpoint({ startMs: e.detail })}></fpv-number>
           ` : ''}
           ${sp.kind === 'ramp' ? html`
-            <fpv-number label="Duration" .value=${sp.durationMs} min="10" max="2000" step="10" unit="ms"
+            <fpv-number .label=${this._i18n.t('pid.label_duration')} .value=${sp.durationMs} min="10" max="2000" step="10" unit="ms"
               @value-change=${(e: CustomEvent<number>) => this._emitSetpoint({ durationMs: e.detail })}></fpv-number>
-            <fpv-number label="Start" .value=${sp.startMs} min="0" max="1000" step="10" unit="ms"
+            <fpv-number .label=${this._i18n.t('pid.label_start')} .value=${sp.startMs} min="0" max="1000" step="10" unit="ms"
               @value-change=${(e: CustomEvent<number>) => this._emitSetpoint({ startMs: e.detail })}></fpv-number>
           ` : ''}
           ${sp.kind === 'sine' ? html`
-            <fpv-number label="Frequency" .value=${sp.frequencyHz} min="0.1" max="50" step="0.1" unit="Hz"
+            <fpv-number .label=${this._i18n.t('common.frequency')} .value=${sp.frequencyHz} min="0.1" max="50" step="0.1" unit="Hz"
               @value-change=${(e: CustomEvent<number>) => this._emitSetpoint({ frequencyHz: e.detail })}></fpv-number>
           ` : ''}
         </div>
@@ -257,11 +257,11 @@ export class PidControls extends LitElement {
   private _renderOptions() {
     const c = this.config.controller
     return html`
-      <fpv-card header="Options">
+      <fpv-card .header=${this._i18n.t('pid.section_options')}>
         <div class="rows">
-          <fpv-toggle label="I-Term Relax" .checked=${c.iTermRelax}
+          <fpv-toggle .label=${this._i18n.t('pid.label_iterm_relax')} .checked=${c.iTermRelax}
             @toggle-change=${(e: CustomEvent<boolean>) => this._emitController({ iTermRelax: e.detail })}></fpv-toggle>
-          <fpv-number label="Anti-Windup" .value=${c.iTermLimitNm} min="0" max="2" step="0.05" unit="Nm"
+          <fpv-number .label=${this._i18n.t('pid.label_anti_windup')} .value=${c.iTermLimitNm} min="0" max="2" step="0.05" unit="Nm"
             @value-change=${(e: CustomEvent<number>) => this._emitController({ iTermLimitNm: e.detail })}></fpv-number>
         </div>
       </fpv-card>
@@ -272,19 +272,19 @@ export class PidControls extends LitElement {
     const gainKeys = Object.keys(GAIN_PRESETS)
     const scenarioKeys = Object.keys(SCENARIO_PRESETS)
     return html`
-      <fpv-card header="Presets">
+      <fpv-card .header=${this._i18n.t('pid.section_presets')}>
         <div class="rows">
-          <fpv-select label="Gains"
+          <fpv-select .label=${this._i18n.t('pid.label_gains_select')}
             value=""
-            .options=${[{ value: '', label: '— Apply Gain Preset —' }, ...gainKeys.map(k => ({ value: k, label: k }))]}
+            .options=${[{ value: '', label: this._i18n.t('pid.preset_gains_placeholder') }, ...gainKeys.map(k => ({ value: k, label: k }))]}
             @select-change=${(e: CustomEvent<string>) => {
               if (e.detail && GAIN_PRESETS[e.detail]) {
                 this._emitGains({ ...GAIN_PRESETS[e.detail] })
               }
             }}></fpv-select>
-          <fpv-select label="Scenario"
+          <fpv-select .label=${this._i18n.t('pid.label_scenario')}
             value=""
-            .options=${[{ value: '', label: '— Apply Scenario —' }, ...scenarioKeys.map(k => ({ value: k, label: k }))]}
+            .options=${[{ value: '', label: this._i18n.t('pid.preset_scenario_placeholder') }, ...scenarioKeys.map(k => ({ value: k, label: k }))]}
             @select-change=${(e: CustomEvent<string>) => {
               if (e.detail && SCENARIO_PRESETS[e.detail]) {
                 this._emit({ ...SCENARIO_PRESETS[e.detail] })
@@ -300,9 +300,9 @@ export class PidControls extends LitElement {
     const enabled = dists.length > 0
     const d: Disturbance = enabled ? dists[0] : { torqueNm: 0.3, startMs: 500, durationMs: 20, kind: 'impulse' }
     return html`
-      <fpv-card header="Disturbance">
+      <fpv-card .header=${this._i18n.t('pid.section_disturbance')}>
         <div class="rows">
-          <fpv-toggle label="Enable" .checked=${enabled}
+          <fpv-toggle .label=${this._i18n.t('common.enable')} .checked=${enabled}
             @toggle-change=${(e: CustomEvent<boolean>) => {
               if (e.detail) {
                 this._emit({ disturbances: [{ torqueNm: 0.3, startMs: 500, durationMs: 20, kind: 'impulse' }] })
@@ -311,15 +311,15 @@ export class PidControls extends LitElement {
               }
             }}></fpv-toggle>
           ${enabled ? html`
-            <fpv-number label="Torque" .value=${d.torqueNm} min="0" max="5" step="0.05" unit="Nm"
+            <fpv-number .label=${this._i18n.t('pid.label_torque')} .value=${d.torqueNm} min="0" max="5" step="0.05" unit="Nm"
               @value-change=${(e: CustomEvent<number>) =>
                 this._emit({ disturbances: [{ ...d, torqueNm: e.detail }] })}></fpv-number>
-            <fpv-number label="Time" .value=${d.startMs} min="0" max="5000" step="10" unit="ms"
+            <fpv-number .label=${this._i18n.t('pid.label_time')} .value=${d.startMs} min="0" max="5000" step="10" unit="ms"
               @value-change=${(e: CustomEvent<number>) =>
                 this._emit({ disturbances: [{ ...d, startMs: e.detail }] })}></fpv-number>
-            <fpv-select label="Kind"
+            <fpv-select .label=${this._i18n.t('pid.label_kind')}
               .value=${d.kind}
-              .options=${[{ value: 'impulse', label: 'Impulse' }, { value: 'step', label: 'Step' }]}
+              .options=${[{ value: 'impulse', label: this._i18n.t('pid.dist_impulse') }, { value: 'step', label: this._i18n.t('pid.dist_step') }]}
               @select-change=${(e: CustomEvent<string>) =>
                 this._emit({ disturbances: [{ ...d, kind: e.detail as 'impulse' | 'step' }] })}></fpv-select>
           ` : ''}

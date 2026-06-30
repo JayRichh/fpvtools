@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state, query } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import '../primitives/index.js'
 
 const FOV_DEG = 120
@@ -74,6 +75,8 @@ export class TiltCalculator extends LitElement {
       }
     `,
   ]
+
+  private _i18n = new I18nController(this)
 
   @state() private _tilt = 30
   @state() private _speed = 20
@@ -156,7 +159,7 @@ export class TiltCalculator extends LitElement {
     // Ground label
     ctx.font = '10px monospace'
     ctx.fillStyle = textMuted
-    ctx.fillText('GND (30m AGL)', 4, groundY - 4)
+    ctx.fillText(this._i18n.t('tilt.canvas_ground'), 4, groundY - 4)
 
     // FOV cone calculations
     const tiltRad = (this._tilt * Math.PI) / 180
@@ -228,7 +231,11 @@ export class TiltCalculator extends LitElement {
       ctx.setLineDash([])
       ctx.font = '10px monospace'
       ctx.fillStyle = accent
-      ctx.fillText(`horizon (${this._horizonPct().toFixed(0)}% from top)`, W - 160, quadY - 4)
+      ctx.fillText(
+        this._i18n.t('tilt.canvas_horizon', { pct: this._horizonPct().toFixed(0) }),
+        W - 160,
+        quadY - 4
+      )
     }
 
     // Ground contact dot (where lower FOV hits the ground)
@@ -288,7 +295,11 @@ export class TiltCalculator extends LitElement {
     // Tilt label
     ctx.font = '10px monospace'
     ctx.fillStyle = primary
-    ctx.fillText(`${this._tilt}° tilt`, quadX + 18, quadY + 16)
+    ctx.fillText(
+      this._i18n.t('tilt.canvas_tilt', { tilt: this._tilt }),
+      quadX + 18,
+      quadY + 16
+    )
   }
 
   render() {
@@ -298,10 +309,10 @@ export class TiltCalculator extends LitElement {
 
     return html`
       <div class="layout">
-        <fpv-card header="Inputs">
+        <fpv-card .header=${this._i18n.t('common.inputs')}>
           <div class="rows">
             <fpv-slider
-              label="Tilt Angle"
+              .label=${this._i18n.t('tilt.label_tilt_angle')}
               .value=${this._tilt}
               min="0"
               max="60"
@@ -313,7 +324,7 @@ export class TiltCalculator extends LitElement {
             ></fpv-slider>
             <div class="speed-row">
               <fpv-number
-                label="Speed"
+                .label=${this._i18n.t('common.speed')}
                 .value=${this._speed}
                 min="0"
                 step="1"
@@ -334,28 +345,28 @@ export class TiltCalculator extends LitElement {
             </div>
           </div>
         </fpv-card>
-        <fpv-card header="Computed">
+        <fpv-card .header=${this._i18n.t('tilt.section_computed')}>
           <div class="rows">
             <div class="result-row">
-              <span class="result-label">Horizon pos</span>
+              <span class="result-label">${this._i18n.t('tilt.label_horizon_pos')}</span>
               <span class="result-value">${this._fmtDisplay(horizPct, 1)}</span>
               <span class="result-unit">% top</span>
             </div>
             <div class="result-row">
-              <span class="result-label">Ground dist</span>
+              <span class="result-label">${this._i18n.t('tilt.label_ground_dist')}</span>
               <span class="result-value">
                 ${isFinite(groundDist) ? this._fmtDisplay(groundDist, 1) : '—'}
               </span>
               <span class="result-unit">m</span>
             </div>
             <div class="result-row">
-              <span class="result-label">AoA (level)</span>
+              <span class="result-label">${this._i18n.t('tilt.label_aoa')}</span>
               <span class="result-value">${this._fmtDisplay(aoa, 1)}</span>
               <span class="result-unit">°</span>
             </div>
           </div>
         </fpv-card>
-        <fpv-card header="Visualization (side view)">
+        <fpv-card .header=${this._i18n.t('tilt.section_viz')}>
           <canvas></canvas>
         </fpv-card>
       </div>

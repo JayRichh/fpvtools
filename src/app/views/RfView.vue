@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from '@/app/composables/useI18n'
 import '@components/rf/link-budget.js'
 import '@components/rf/vtx-checker.js'
+
+const { t } = useI18n()
 </script>
 <template>
   <div class="rf-view">
-    <h1>RF Tools</h1>
-    <p class="subtitle">ELRS link budget calculator and VTX power compliance checker.</p>
+    <h1>{{ t('rf.title') }}</h1>
+    <p class="subtitle">{{ t('rf.subtitle') }}</p>
     <div class="rf-grid">
       <link-budget></link-budget>
       <vtx-checker></vtx-checker>

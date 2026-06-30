@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import '../primitives/index.js'
 import {
   mwToDbm,
@@ -76,6 +77,8 @@ export class UnitConverter extends LitElement {
     `,
   ]
 
+  private _i18n = new I18nController(this)
+
   @state() private _tab = 0
 
   // Power: dBm <-> mW (canonical: mw)
@@ -113,7 +116,7 @@ export class UnitConverter extends LitElement {
     const dbm = mwToDbm(Math.max(this._mw, 0.0001))
     const wh = mahToWh(this._mah, this._powerV)
     return html`
-      <fpv-card header="dBm ⇄ mW">
+      <fpv-card .header=${this._i18n.t('convert.section_dbm_mw')}>
         <div class="rows">
           <fpv-number
             label="mW"
@@ -136,10 +139,10 @@ export class UnitConverter extends LitElement {
           ></fpv-number>
         </div>
       </fpv-card>
-      <fpv-card header="mAh ⇄ Wh">
+      <fpv-card .header=${this._i18n.t('convert.section_mah_wh')}>
         <div class="rows">
           <fpv-number
-            label="Voltage"
+            .label=${this._i18n.t('common.voltage')}
             .value=${this._powerV}
             min="0.1"
             max="100"
@@ -181,7 +184,7 @@ export class UnitConverter extends LitElement {
     const hz = rpmToHz(this._rpm)
     const rads = rpmToRadS(this._rpm)
     return html`
-      <fpv-card header="KV → RPM">
+      <fpv-card .header=${this._i18n.t('convert.section_kv_rpm')}>
         <div class="rows">
           <fpv-number
             label="KV"
@@ -195,7 +198,7 @@ export class UnitConverter extends LitElement {
             }}
           ></fpv-number>
           <fpv-number
-            label="Voltage"
+            .label=${this._i18n.t('common.voltage')}
             .value=${this._kvV}
             min="0.1"
             max="60"
@@ -212,7 +215,7 @@ export class UnitConverter extends LitElement {
           </div>
         </div>
       </fpv-card>
-      <fpv-card header="RPM ⇄ Hz ⇄ rad/s">
+      <fpv-card .header=${this._i18n.t('convert.section_rpm_hz_rads')}>
         <div class="rows">
           <fpv-number
             label="RPM"
@@ -254,7 +257,7 @@ export class UnitConverter extends LitElement {
     const ampacity = awgAmpacity(awgNum)
     const drop = voltageDropV(this._currentA, awgNum, this._lengthM)
     return html`
-      <fpv-card header="AWG → Ampacity">
+      <fpv-card .header=${this._i18n.t('convert.section_awg_ampacity')}>
         <div class="rows">
           <fpv-select
             label="AWG"
@@ -265,16 +268,16 @@ export class UnitConverter extends LitElement {
             }}
           ></fpv-select>
           <div class="result-row">
-            <span class="result-label">Ampacity</span>
+            <span class="result-label">${this._i18n.t('convert.label_ampacity')}</span>
             <span class="result-value">${this._fmtDisplay(ampacity, 2)}</span>
             <span class="result-unit">A</span>
           </div>
         </div>
       </fpv-card>
-      <fpv-card header="Voltage Drop">
+      <fpv-card .header=${this._i18n.t('convert.section_voltage_drop')}>
         <div class="rows">
           <fpv-number
-            label="Current"
+            .label=${this._i18n.t('convert.label_current')}
             .value=${this._currentA}
             min="0"
             step="0.5"
@@ -292,7 +295,7 @@ export class UnitConverter extends LitElement {
             }}
           ></fpv-select>
           <fpv-number
-            label="Length"
+            .label=${this._i18n.t('convert.label_length')}
             .value=${this._lengthM}
             min="0"
             step="0.1"
@@ -302,7 +305,7 @@ export class UnitConverter extends LitElement {
             }}
           ></fpv-number>
           <div class="result-row">
-            <span class="result-label">V Drop</span>
+            <span class="result-label">${this._i18n.t('convert.label_v_drop')}</span>
             <span class="result-value">${this._fmtDisplay(drop, 4)}</span>
             <span class="result-unit">V</span>
           </div>
@@ -314,10 +317,10 @@ export class UnitConverter extends LitElement {
   private _renderAngle() {
     const rad = this._angleDeg * (Math.PI / 180)
     return html`
-      <fpv-card header="Degrees ⇄ Radians">
+      <fpv-card .header=${this._i18n.t('convert.section_deg_rad')}>
         <div class="rows">
           <fpv-number
-            label="Degrees"
+            .label=${this._i18n.t('convert.label_degrees')}
             .value=${this._angleDeg}
             step="1"
             unit="°"
@@ -326,7 +329,7 @@ export class UnitConverter extends LitElement {
             }}
           ></fpv-number>
           <fpv-number
-            label="Radians"
+            .label=${this._i18n.t('convert.label_radians')}
             .value=${this._safeNum(parseFloat(rad.toFixed(6)))}
             step="0.01"
             unit="rad"
@@ -342,7 +345,12 @@ export class UnitConverter extends LitElement {
   render() {
     return html`
       <fpv-tabs
-        .tabs=${['Power', 'Frequency', 'Electrical', 'Angle']}
+        .tabs=${[
+          this._i18n.t('convert.tab_power'),
+          this._i18n.t('convert.tab_frequency'),
+          this._i18n.t('convert.tab_electrical'),
+          this._i18n.t('convert.tab_angle'),
+        ]}
         .active=${this._tab}
         @tab-change=${(e: CustomEvent<number>) => {
           this._tab = e.detail

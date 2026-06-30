@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import { parseBlackboxCsv } from '@core/blackbox/parse'
 
 @customElement('bbl-dropzone')
@@ -79,6 +80,8 @@ export class BblDropzone extends LitElement {
     `,
   ]
 
+  private _i18n = new I18nController(this)
+
   @state() private _dragOver = false
   @state() private _fileName = ''
   @state() private _error = ''
@@ -116,7 +119,7 @@ export class BblDropzone extends LitElement {
 
   private _processFile(file: File) {
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      this._error = 'Please drop a .csv file exported from Blackbox Explorer'
+      this._error = this._i18n.t('blackbox.error_not_csv')
       return
     }
 
@@ -136,11 +139,11 @@ export class BblDropzone extends LitElement {
           })
         )
       } catch (err) {
-        this._error = `Parse error: ${err instanceof Error ? err.message : String(err)}`
+        this._error = this._i18n.t('blackbox.error_parse', { message: err instanceof Error ? err.message : String(err) })
       }
     }
     reader.onerror = () => {
-      this._error = 'Failed to read file'
+      this._error = this._i18n.t('blackbox.error_read')
     }
     reader.readAsText(file)
   }
@@ -157,8 +160,8 @@ export class BblDropzone extends LitElement {
         @click=${this._onClick}
       >
         <div class="icon">&#128196;</div>
-        <div class="label">Drop Blackbox CSV</div>
-        <div class="sublabel">or click to browse — .csv export from Betaflight Blackbox Explorer</div>
+        <div class="label">${this._i18n.t('blackbox.dropzone_label')}</div>
+        <div class="sublabel">${this._i18n.t('blackbox.dropzone_sub')}</div>
         ${this._fileName
           ? html`<div class="filename">${this._fileName}</div>`
           : ''}

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import { CELL_LIBRARY } from '@core/power/cells'
 import { computePack } from '@core/power/pack'
 import type { PackConfig, FlightModel, PackResult } from '@core/power/types'
@@ -96,6 +97,8 @@ export class PackCalculator extends LitElement {
     `,
   ]
 
+  private _i18n = new I18nController(this)
+
   @state() private _packConfig: PackConfig = {
     cell: CELL_LIBRARY[DEFAULT_CELL_KEY],
     series: 6,
@@ -137,9 +140,9 @@ export class PackCalculator extends LitElement {
     const options = cellKeys.map(k => ({ value: k, label: k }))
     const selectedKey = this._packConfig.cell.name
     return html`
-      <fpv-card header="Cell">
+      <fpv-card .header=${this._i18n.t('power.section_cell')}>
         <fpv-select
-          label="Model"
+          .label=${this._i18n.t('power.label_model')}
           .value=${selectedKey}
           .options=${options}
           @select-change=${(e: CustomEvent<string>) => {
@@ -154,22 +157,22 @@ export class PackCalculator extends LitElement {
   private _renderPackConfig() {
     const p = this._packConfig
     return html`
-      <fpv-card header="Pack Config">
+      <fpv-card .header=${this._i18n.t('power.section_pack_config')}>
         <div class="rows">
           <fpv-number
-            label="Series"
+            .label=${this._i18n.t('power.label_series')}
             .value=${p.series}
             min="1" max="14" step="1"
             @value-change=${(e: CustomEvent<number>) => this._updatePack({ series: e.detail })}
           ></fpv-number>
           <fpv-number
-            label="Parallel"
+            .label=${this._i18n.t('power.label_parallel')}
             .value=${p.parallel}
             min="1" max="4" step="1"
             @value-change=${(e: CustomEvent<number>) => this._updatePack({ parallel: e.detail })}
           ></fpv-number>
           <fpv-number
-            label="Wiring"
+            .label=${this._i18n.t('power.label_wiring')}
             .value=${p.wiringOverheadPct}
             min="0" max="20" step="1"
             unit="%"
@@ -183,37 +186,37 @@ export class PackCalculator extends LitElement {
   private _renderFlightModel() {
     const f = this._flightModel
     return html`
-      <fpv-card header="Flight Model">
+      <fpv-card .header=${this._i18n.t('power.section_flight_model')}>
         <div class="rows">
           <fpv-number
-            label="AUW"
+            .label=${this._i18n.t('common.auw')}
             .value=${f.auwG}
             min="100" max="10000" step="50"
             unit="g"
             @value-change=${(e: CustomEvent<number>) => this._updateFlight({ auwG: e.detail })}
           ></fpv-number>
           <fpv-number
-            label="Hover Eff"
+            .label=${this._i18n.t('power.label_hover_eff')}
             .value=${f.hoverEfficiencyGPerW}
             min="1" max="20" step="0.5"
             unit="g/W"
             @value-change=${(e: CustomEvent<number>) => this._updateFlight({ hoverEfficiencyGPerW: e.detail })}
           ></fpv-number>
           <fpv-number
-            label="Cruise Fac"
+            .label=${this._i18n.t('power.label_cruise_fac')}
             .value=${f.cruiseFactor}
             min="0.3" max="1.0" step="0.05"
             @value-change=${(e: CustomEvent<number>) => this._updateFlight({ cruiseFactor: e.detail })}
           ></fpv-number>
           <fpv-number
-            label="Speed"
+            .label=${this._i18n.t('common.speed')}
             .value=${f.cruiseSpeedMs}
             min="1" max="50" step="1"
             unit="m/s"
             @value-change=${(e: CustomEvent<number>) => this._updateFlight({ cruiseSpeedMs: e.detail })}
           ></fpv-number>
           <fpv-number
-            label="Usable Cap"
+            .label=${this._i18n.t('power.label_usable_cap')}
             .value=${f.usableCapacityPct}
             min="50" max="100" step="5"
             unit="%"
@@ -227,72 +230,74 @@ export class PackCalculator extends LitElement {
   private _renderResults() {
     const r = this._result
     if (!r) {
-      return html`<fpv-card header="Results"><p class="no-result">Configure inputs above.</p></fpv-card>`
+      return html`<fpv-card .header=${this._i18n.t('common.results')}><p class="no-result">${this._i18n.t('power.empty')}</p></fpv-card>`
     }
 
     return html`
-      <fpv-card header="Pack">
+      <fpv-card .header=${this._i18n.t('power.section_pack')}>
         <div class="rows">
           <div class="result-row">
-            <span class="result-label">Voltage</span>
+            <span class="result-label">${this._i18n.t('common.voltage')}</span>
             <span class="result-value">${r.nominalV.toFixed(1)} V</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Capacity</span>
+            <span class="result-label">${this._i18n.t('power.label_capacity')}</span>
             <span class="result-value">${r.capacityMah} mAh · ${r.energyWh.toFixed(1)} Wh</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Weight</span>
+            <span class="result-label">${this._i18n.t('common.weight')}</span>
             <span class="result-value">${r.weightG.toFixed(0)} g</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Max Cont</span>
+            <span class="result-label">${this._i18n.t('power.label_max_cont')}</span>
             <span class="result-value">${r.maxContinuousA.toFixed(0)} A</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Pack IR</span>
+            <span class="result-label">${this._i18n.t('power.label_pack_ir')}</span>
             <span class="result-value">${r.packIRmohm.toFixed(1)} mΩ</span>
           </div>
         </div>
       </fpv-card>
 
-      <fpv-card header="Flight">
+      <fpv-card .header=${this._i18n.t('power.section_flight')}>
         <div class="rows">
           <div class="result-row">
-            <span class="result-label">Hover I</span>
+            <span class="result-label">${this._i18n.t('power.label_hover_i')}</span>
             <span class="result-value">${r.hoverCurrentA.toFixed(1)} A</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Cruise I</span>
+            <span class="result-label">${this._i18n.t('power.label_cruise_i')}</span>
             <span class="result-value">${r.cruiseCurrentA.toFixed(1)} A</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Hover Time</span>
+            <span class="result-label">${this._i18n.t('power.label_hover_time')}</span>
             <span class="result-value">${r.hoverTimeMin.toFixed(1)} min</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Cruise Time</span>
+            <span class="result-label">${this._i18n.t('power.label_cruise_time')}</span>
             <span class="result-value">${r.cruiseTimeMin.toFixed(1)} min</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Voltage Sag</span>
+            <span class="result-label">${this._i18n.t('power.label_voltage_sag')}</span>
             <span class="result-value">${r.voltageSagV.toFixed(2)} V</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Range</span>
+            <span class="result-label">${this._i18n.t('common.range')}</span>
             <span class="result-value">${r.rangeKm.toFixed(1)} km</span>
           </div>
         </div>
       </fpv-card>
 
-      <fpv-card header="Verdicts">
+      <fpv-card .header=${this._i18n.t('power.section_verdicts')}>
         <div class="verdicts">
           <fpv-badge variant=${r.cRateOk ? 'success' : 'error'}>
-            C-rate ${r.cRateOk ? `OK ×${r.cRateMargin.toFixed(1)}` : 'OVER'}
+            ${r.cRateOk
+              ? this._i18n.t('power.verdict_crate_ok', { margin: r.cRateMargin.toFixed(1) })
+              : this._i18n.t('power.verdict_crate_over')}
           </fpv-badge>
           ${r.sagWarning
-            ? html`<fpv-badge variant="warning">Sag warning ${r.voltageSagV.toFixed(2)} V</fpv-badge>`
-            : html`<fpv-badge variant="success">Sag OK</fpv-badge>`
+            ? html`<fpv-badge variant="warning">${this._i18n.t('power.verdict_sag_warning', { v: r.voltageSagV.toFixed(2) })}</fpv-badge>`
+            : html`<fpv-badge variant="success">${this._i18n.t('power.verdict_sag_ok')}</fpv-badge>`
           }
         </div>
       </fpv-card>

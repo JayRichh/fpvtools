@@ -1,15 +1,10 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import { computeLinkBudget } from '@core/rf/linkBudget'
 import type { LinkBudgetInput, LinkBudgetResult } from '@core/rf/types'
 import '../primitives/index.js'
-
-const FREQ_OPTIONS = [
-  { value: '915', label: '915 MHz (ELRS Long Range)' },
-  { value: '2400', label: '2400 MHz (2.4 GHz ELRS)' },
-  { value: '5800', label: '5800 MHz (5.8 GHz Video)' },
-]
 
 const DEFAULT_INPUT: LinkBudgetInput = {
   txPowerMw: 100,
@@ -73,6 +68,8 @@ export class LinkBudget extends LitElement {
     `,
   ]
 
+  private _i18n = new I18nController(this)
+
   @state() private _input: LinkBudgetInput = { ...DEFAULT_INPUT }
   @state() private _result: LinkBudgetResult = computeLinkBudget(DEFAULT_INPUT)
 
@@ -83,12 +80,17 @@ export class LinkBudget extends LitElement {
 
   render() {
     const r = this._result
+    const freqOptions = [
+      { value: '915', label: this._i18n.t('rf.freq_915') },
+      { value: '2400', label: this._i18n.t('rf.freq_2400') },
+      { value: '5800', label: this._i18n.t('rf.freq_5800') },
+    ]
     return html`
       <div class="sections">
-        <fpv-card header="Transmitter">
+        <fpv-card .header=${this._i18n.t('rf.section_transmitter')}>
           <div class="rows">
             <fpv-number
-              label="TX Power"
+              .label=${this._i18n.t('rf.label_tx_power')}
               .value=${this._input.txPowerMw}
               min="1"
               max="4000"
@@ -97,7 +99,7 @@ export class LinkBudget extends LitElement {
               @value-change=${(e: CustomEvent<number>) => this._update({ txPowerMw: e.detail })}
             ></fpv-number>
             <fpv-number
-              label="TX Gain"
+              .label=${this._i18n.t('rf.label_tx_gain')}
               .value=${this._input.txGainDbi}
               min="-5"
               max="20"
@@ -108,10 +110,10 @@ export class LinkBudget extends LitElement {
           </div>
         </fpv-card>
 
-        <fpv-card header="Receiver">
+        <fpv-card .header=${this._i18n.t('rf.section_receiver')}>
           <div class="rows">
             <fpv-number
-              label="RX Gain"
+              .label=${this._i18n.t('rf.label_rx_gain')}
               .value=${this._input.rxGainDbi}
               min="-5"
               max="20"
@@ -122,16 +124,16 @@ export class LinkBudget extends LitElement {
           </div>
         </fpv-card>
 
-        <fpv-card header="Link Parameters">
+        <fpv-card .header=${this._i18n.t('rf.section_link_params')}>
           <div class="rows">
             <fpv-select
-              label="Frequency"
+              .label=${this._i18n.t('common.frequency')}
               .value=${String(this._input.frequencyMhz)}
-              .options=${FREQ_OPTIONS}
+              .options=${freqOptions}
               @select-change=${(e: CustomEvent<string>) => this._update({ frequencyMhz: Number(e.detail) })}
             ></fpv-select>
             <fpv-number
-              label="Packet Rate"
+              .label=${this._i18n.t('rf.label_packet_rate')}
               .value=${this._input.packetRateHz}
               min="25"
               max="500"
@@ -142,26 +144,26 @@ export class LinkBudget extends LitElement {
           </div>
         </fpv-card>
 
-        <fpv-card header="Results">
+        <fpv-card .header=${this._i18n.t('common.results')}>
           <div class="rows">
             <div class="result-row">
-              <span class="result-label">TX Power</span>
+              <span class="result-label">${this._i18n.t('rf.label_tx_power')}</span>
               <span class="result-value">${r.txPowerDbm.toFixed(1)} dBm</span>
             </div>
             <div class="result-row">
-              <span class="result-label">Sensitivity</span>
+              <span class="result-label">${this._i18n.t('rf.label_sensitivity')}</span>
               <span class="result-value">${r.sensitivityDbm.toFixed(1)} dBm</span>
             </div>
             <div class="result-row">
-              <span class="result-label">Path Loss @ 1km</span>
+              <span class="result-label">${this._i18n.t('rf.label_path_loss')}</span>
               <span class="result-value">${r.pathLossDb.toFixed(1)} dB</span>
             </div>
             <div class="result-row">
-              <span class="result-label">Link Margin</span>
+              <span class="result-label">${this._i18n.t('rf.label_link_margin')}</span>
               <span class="result-value">${r.linkMarginDb.toFixed(1)} dB</span>
             </div>
             <div class="result-row">
-              <span class="result-label">Theoretical Range</span>
+              <span class="result-label">${this._i18n.t('rf.label_theoretical_range')}</span>
               <span class="result-value highlight">${r.theoreticalRangeKm.toFixed(2)} km</span>
             </div>
           </div>

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from '@/app/composables/useI18n'
 import '@components/blackbox/bbl-dropzone.js'
 import '@components/blackbox/bbl-overlay.js'
+
+const { t } = useI18n()
 
 const log = ref<any>(null)
 const overlayRef = ref<Element | null>(null)
@@ -21,10 +24,8 @@ watch(log, (newLog) => {
 
 <template>
   <div class="blackbox-view">
-    <h1>Blackbox Analyzer</h1>
-    <p class="subtitle">
-      Drop a Betaflight Blackbox Explorer CSV export to analyze gyro FFT and step response.
-    </p>
+    <h1>{{ t('blackbox.title') }}</h1>
+    <p class="subtitle">{{ t('blackbox.subtitle') }}</p>
     <bbl-dropzone @log-loaded="onLogLoaded"></bbl-dropzone>
     <bbl-overlay ref="overlayRef"></bbl-overlay>
   </div>

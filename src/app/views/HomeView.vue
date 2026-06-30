@@ -1,8 +1,8 @@
 <template>
   <div class="home">
     <section class="hero">
-      <h1 class="hero-title">FPV Tools</h1>
-      <p class="hero-tagline">Browser-native calculators and simulators for FPV pilots</p>
+      <h1 class="hero-title">{{ t('nav.brand') }}</h1>
+      <p class="hero-tagline">{{ t('home.tagline') }}</p>
     </section>
 
     <section class="tools-grid">
@@ -17,48 +17,21 @@
 </template>
 
 <script setup lang="ts">
-const tools = [
-  {
-    name: 'PID Tuner',
-    path: '/pid',
-    description: 'Simulate PID controller response and tune gains with live step-response preview.',
-  },
-  {
-    name: 'Power Calculator',
-    path: '/power',
-    description: 'Estimate battery capacity, current draw, and flight time for any build.',
-  },
-  {
-    name: 'Motor Calculator',
-    path: '/motors',
-    description: 'Compare KV ratings, thrust, and efficiency across motor and prop combinations.',
-  },
-  {
-    name: 'RF Link Budget',
-    path: '/rf',
-    description: 'Calculate range, link margin, and RSSI for your video transmitter setup.',
-  },
-  {
-    name: 'Unit Converter',
-    path: '/convert',
-    description: 'Convert between imperial and metric units commonly used in FPV builds.',
-  },
-  {
-    name: 'Blackbox Viewer',
-    path: '/blackbox',
-    description: 'Analyze Betaflight blackbox logs to diagnose oscillations and tune PIDs.',
-  },
-  {
-    name: 'Tilt Calculator',
-    path: '/tilt',
-    description: 'Compute camera tilt angle, field of view, and horizon offset at speed.',
-  },
-  {
-    name: 'Diff Viewer',
-    path: '/diff',
-    description: 'Compare Betaflight diff dumps side-by-side to track configuration changes.',
-  },
-]
+import { computed } from 'vue'
+import { useI18n } from '@/app/composables/useI18n'
+
+const { t } = useI18n()
+
+const tools = computed(() => [
+  { name: t('home.pid_name'), path: '/pid', description: t('home.pid_desc') },
+  { name: t('home.power_name'), path: '/power', description: t('home.power_desc') },
+  { name: t('home.motors_name'), path: '/motors', description: t('home.motors_desc') },
+  { name: t('home.rf_name'), path: '/rf', description: t('home.rf_desc') },
+  { name: t('home.convert_name'), path: '/convert', description: t('home.convert_desc') },
+  { name: t('home.blackbox_name'), path: '/blackbox', description: t('home.blackbox_desc') },
+  { name: t('home.tilt_name'), path: '/tilt', description: t('home.tilt_desc') },
+  { name: t('home.diff_name'), path: '/diff', description: t('home.diff_desc') },
+])
 </script>
 
 <style scoped>

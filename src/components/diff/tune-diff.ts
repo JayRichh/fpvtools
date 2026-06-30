@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import '../primitives/index.js'
 
 type ParsedDiff = Record<string, Record<string, string>>
@@ -184,6 +185,8 @@ export class TuneDiff extends LitElement {
     `,
   ]
 
+  private _i18n = new I18nController(this)
+
   @state() private _textA = ''
   @state() private _textB = ''
 
@@ -229,9 +232,9 @@ export class TuneDiff extends LitElement {
             <table class="diff-table">
               <thead>
                 <tr>
-                  <th>Setting</th>
-                  <th>${bothSides ? 'Config A' : 'Value'}</th>
-                  ${bothSides ? html`<th>Config B</th>` : ''}
+                  <th>${this._i18n.t('diff.table_setting')}</th>
+                  <th>${bothSides ? this._i18n.t('diff.label_config_a') : this._i18n.t('diff.table_value')}</th>
+                  ${bothSides ? html`<th>${this._i18n.t('diff.label_config_b')}</th>` : ''}
                 </tr>
               </thead>
               <tbody>
@@ -267,7 +270,7 @@ export class TuneDiff extends LitElement {
     if (!hasA && !hasB) {
       return html`
         <div class="empty-state">
-          Paste Betaflight "diff all" output into one or both panels above to compare tunes.
+          ${this._i18n.t('diff.empty_initial')}
         </div>
       `
     }
@@ -280,7 +283,7 @@ export class TuneDiff extends LitElement {
     if (!entries.length) {
       return html`
         <div class="empty-state">
-          ${bothSides ? 'No differences found — configs appear identical.' : 'No settings found. Make sure to paste valid "diff all" output.'}
+          ${bothSides ? this._i18n.t('diff.empty_identical') : this._i18n.t('diff.empty_invalid')}
         </div>
       `
     }
@@ -292,9 +295,9 @@ export class TuneDiff extends LitElement {
     return html`
       <div class="textareas">
         <div class="ta-wrap">
-          <span class="ta-label">Config A</span>
+          <span class="ta-label">${this._i18n.t('diff.label_config_a')}</span>
           <textarea
-            placeholder="Paste first 'diff all' output here..."
+            placeholder=${this._i18n.t('diff.placeholder_a')}
             .value=${this._textA}
             @input=${(e: InputEvent) => {
               this._textA = (e.target as HTMLTextAreaElement).value
@@ -302,9 +305,9 @@ export class TuneDiff extends LitElement {
           ></textarea>
         </div>
         <div class="ta-wrap">
-          <span class="ta-label">Config B</span>
+          <span class="ta-label">${this._i18n.t('diff.label_config_b')}</span>
           <textarea
-            placeholder="Paste second 'diff all' output here..."
+            placeholder=${this._i18n.t('diff.placeholder_b')}
             .value=${this._textB}
             @input=${(e: InputEvent) => {
               this._textB = (e.target as HTMLTextAreaElement).value

@@ -1,6 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import { welchPsd } from '@core/blackbox/fft'
 import { extractStepEvents } from '@core/blackbox/stepExtract'
 import { fitNoiseFromSpectrum } from '@core/noise/spectrum'
@@ -74,6 +75,8 @@ export class BblOverlay extends LitElement {
 
   // ─── External properties ─────────────────────────────────────────────────
 
+  private _i18n = new I18nController(this)
+
   /** Pass the BlackboxLog directly as a DOM property from Vue or JS. */
   @property({ attribute: false }) log: BlackboxLog | null = null
   @property({ type: Boolean }) showFft          = true
@@ -119,7 +122,7 @@ export class BblOverlay extends LitElement {
 
     const fftSeries: ScopeSeries[] = [
       {
-        name:  'Gyro PSD (dB)',
+        name:  this._i18n.t('blackbox.series_gyro_psd'),
         color: '#4488ff',
         data:  spectrum.psd,
       },
@@ -145,7 +148,7 @@ export class BblOverlay extends LitElement {
   private _renderStepView() {
     const events = this._stepEvents
     if (events.length === 0) {
-      return html`<div class="no-data">No step events detected in this log</div>`
+      return html`<div class="no-data">${this._i18n.t('blackbox.no_steps')}</div>`
     }
 
     const log = this.log!
@@ -155,7 +158,11 @@ export class BblOverlay extends LitElement {
     const stepSeries: ScopeSeries[] = events
       .slice(0, MAX_STEPS)
       .map((evt, i) => ({
-        name:  `Step ${i + 1} (${evt.amplitude > 0 ? '+' : ''}${evt.amplitude.toFixed(0)} °/s)`,
+        name:  this._i18n.t('blackbox.step_series_name', {
+          n: i + 1,
+          sign: evt.amplitude > 0 ? '+' : '',
+          amplitude: evt.amplitude.toFixed(0),
+        }),
         color: STEP_COLORS[i % STEP_COLORS.length],
         data:  evt.samples,
       }))
@@ -185,13 +192,13 @@ export class BblOverlay extends LitElement {
     return html`
       <div class="noise-model">
         <fpv-badge variant="info">
-          Fundamental: ${m.fundamentalHz.toFixed(1)} Hz
+          ${this._i18n.t('blackbox.noise_fundamental', { hz: m.fundamentalHz.toFixed(1) })}
         </fpv-badge>
 
         ${activeHarmonics.map(
           ({ amp, h }) => html`
             <fpv-badge variant="warning">
-              ${h}× harmonic: ${(20 * Math.log10(amp + 1e-12)).toFixed(1)} dB
+              ${this._i18n.t('blackbox.noise_harmonic', { n: h, dB: (20 * Math.log10(amp + 1e-12)).toFixed(1) })}
             </fpv-badge>
           `
         )}
@@ -199,14 +206,13 @@ export class BblOverlay extends LitElement {
         ${m.resonance
           ? html`
               <fpv-badge variant="error">
-                Resonance: ${m.resonance.freqHz.toFixed(1)} Hz
-                (Q&nbsp;=&nbsp;${m.resonance.q.toFixed(1)})
+                ${this._i18n.t('blackbox.noise_resonance', { hz: m.resonance.freqHz.toFixed(1), q: m.resonance.q.toFixed(1) })}
               </fpv-badge>
             `
           : ''}
 
         <fpv-badge variant="success">
-          Broadband: ${m.broadbandStdDegS.toFixed(3)} °/s RMS
+          ${this._i18n.t('blackbox.noise_broadband', { rms: m.broadbandStdDegS.toFixed(3) })}
         </fpv-badge>
       </div>
     `
@@ -228,14 +234,14 @@ export class BblOverlay extends LitElement {
     return html`
       <div class="overlay">
         <div class="log-summary">
-          <span>${samps.toLocaleString()} samples</span>
-          <span>${log.loopRateHz > 0 ? log.loopRateHz.toLocaleString() + ' Hz loop' : '—'}</span>
+          <span>${this._i18n.t('blackbox.summary_samples', { n: samps.toLocaleString() })}</span>
+          <span>${log.loopRateHz > 0 ? this._i18n.t('blackbox.summary_loop', { hz: log.loopRateHz.toLocaleString() }) : '—'}</span>
           <span>${durS}</span>
-          <span>${this._stepEvents.length} step event${this._stepEvents.length !== 1 ? 's' : ''}</span>
+          <span>${this._i18n.t('blackbox.summary_steps', { n: this._stepEvents.length })}</span>
         </div>
 
         <fpv-tabs
-          .tabs=${['FFT Analysis', 'Step Response']}
+          .tabs=${[this._i18n.t('blackbox.tab_fft'), this._i18n.t('blackbox.tab_step')]}
           .active=${this._activeTab}
           @tab-change=${(e: CustomEvent) => { this._activeTab = e.detail }}
         ></fpv-tabs>
