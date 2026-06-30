@@ -6,6 +6,7 @@ import { computeFlightTime, FLIGHTTIME_DEFAULTS } from '@core/flighttime/calcula
 import type { FlightTimeInput, FlightTimeResult } from '@core/flighttime/types.js'
 import '../primitives/index.js'
 import './flight-time-canvas.js'
+import './flight-time-viz.js'
 
 @customElement('flight-time-calculator')
 export class FlightTimeCalculator extends LitElement {
@@ -15,12 +16,18 @@ export class FlightTimeCalculator extends LitElement {
       :host { display: block; }
 
       .layout {
+        display: flex;
+        flex-direction: column;
+        gap: var(--fpv-space-lg);
+      }
+      .lower {
         display: grid;
-        grid-template-columns: 320px 1fr;
+        grid-template-columns: 300px 1fr;
         gap: var(--fpv-space-lg);
         align-items: start;
       }
-      @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+      @media (max-width: 768px) { .lower { grid-template-columns: 1fr; } }
+      flight-time-viz { height: 260px; }
 
       .rows {
         display: flex;
@@ -140,6 +147,13 @@ export class FlightTimeCalculator extends LitElement {
 
     return html`
       <div class="layout">
+        <flight-time-viz
+          .result=${res}
+          chemistry=${inp.chemistry}
+          .cellCount=${inp.cellCount}
+        ></flight-time-viz>
+
+        <div class="lower">
         <!-- Controls -->
         <div class="controls">
           <fpv-card header="Battery">
@@ -189,7 +203,7 @@ export class FlightTimeCalculator extends LitElement {
         <div class="results">
           <flight-time-canvas
             .result=${res}
-            chemistry=${inp.chemistry}
+            .chemistry=${inp.chemistry}
             .cellCount=${inp.cellCount}
           ></flight-time-canvas>
 
@@ -233,6 +247,7 @@ export class FlightTimeCalculator extends LitElement {
             </div>
           </fpv-card>
         </div>
+        </div><!-- end .lower -->
       </div>
     `
   }

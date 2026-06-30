@@ -2,6 +2,15 @@ import { LitElement, html, css } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
 
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+function lerpColor(t: number): [number, number, number] {
+  // green → yellow → red
+  const r = t < 0.5 ? Math.round(60 + 195 * t * 2) : 255
+  const g = t < 0.5 ? 200 : Math.round(200 * (1 - (t - 0.5) * 2))
+  return [r, g, 60]
+}
+
 @customElement('pack-viz')
 export class PackViz extends LitElement {
   static styles = [
@@ -71,13 +80,6 @@ export class PackViz extends LitElement {
     this._dirty = true
   }
 
-  private _lerpColor(t: number): string {
-    // green (t=0) → yellow (t=0.5) → red (t=1)
-    const r = t < 0.5 ? Math.round(255 * t * 2) : 255
-    const g = t < 0.5 ? 200 : Math.round(200 * (1 - (t - 0.5) * 2))
-    return `rgb(${r},${g},60)`
-  }
-
   private _draw() {
     const ctx = this._ctx, canvas = this._canvas
     if (!ctx || !canvas.width) return
@@ -91,74 +93,161 @@ export class PackViz extends LitElement {
 
     const cs = getComputedStyle(this)
     const get = (v: string, fb: string) => cs.getPropertyValue(v).trim() || fb
-    const clrBorder = get('--fpv-border', '#2a2a3a')
-    const clrText = get('--fpv-text', '#e0e0e8')
-    const clrMuted = get('--fpv-text-muted', '#8888a0')
+    const clrBorder  = get('--fpv-border', '#2a2a3a')
+    const clrText    = get('--fpv-text', '#e0e0e8')
+    const clrMuted   = get('--fpv-text-muted', '#8888a0')
     const clrPrimary = get('--fpv-primary', '#00d4aa')
-    const fontMono = get('--fpv-font-mono', 'JetBrains Mono, monospace')
+    const fontMono   = get('--fpv-font-mono', 'JetBrains Mono, monospace')
+    const fontSans   = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
 
-    const S = this.cellCount
-    const P = this.parallelCount
-    const total = S * P
-    if (total === 0) { ctx.restore(); return }
+    const S = Math.max(1, this.cellCount)
+    const P = Math.max(1, this.parallelCount)
+    const dPct = clamp(this.dischargePct, 0, 1)
+    const [cr, cg, cb] = lerpColor(dPct)
+    const cellRgb = `${cr},${cg},${cb}`
 
-    const gridPadX = 12, gridPadY = 12
-    const gridH = Math.min(H * 0.55, (H - gridPadY * 2))
-    const gridW = W - gridPadX * 2
-    const cellW = Math.min(gridW / S - 4, 40)
-    const cellH = Math.min(gridH / P - 4, 30)
-    const startX = gridPadX + (gridW - (cellW + 4) * S) / 2
-    const startY = gridPadY
+    // ── Isometric layout ─────────────────────────────────────────────────────
+    // Each cell is a box. We use a fixed iso step and scale to fit W×H.
+    // iso basis vectors:
+    //   s direction (series): right+down → (cos30, sin30*0.5)
+    //   p direction (parallel): left+down → (-cos30, sin30*0.5)
+    // box height: goes upward in screen (negative y)
 
-    const dPct = Math.max(0, Math.min(1, this.dischargePct))
-    const cellColor = this._lerpColor(dPct)
+    const COS30 = Math.cos(Math.PI / 6)
+    const SIN30 = Math.sin(Math.PI / 6)
 
-    // Draw cell grid (S columns = series, P rows = parallel)
-    for (let p = 0; p < P; p++) {
-      for (let s = 0; s < S; s++) {
-        const x = startX + s * (cellW + 4)
-        const y = startY + p * (cellH + 4)
-        const r = 4
+    // Rough cell size fitting: total iso width ≈ (S+P)*COS30*cellW
+    const availW = W * 0.88
+    const availH = H * 0.72
+    const cellW = Math.min(
+      availW / ((S + P) * COS30),
+      availH / ((S + P) * SIN30 * 0.5 + 1.4),
+      38
+    )
+    const cellH = cellW * 1.4  // cylinder height
+
+    // iso step per cell in each direction
+    const stepS  = [ COS30 * cellW,  SIN30 * cellW * 0.5]
+    const stepP  = [-COS30 * cellW,  SIN30 * cellW * 0.5]
+
+    // Grid centre in screen space
+    // offset so the whole grid is centered
+    const gridW_px = (S + P) * COS30 * cellW
+    const gridH_px = (S + P) * SIN30 * cellW * 0.5 + cellH
+    const ox = W / 2
+    const oy = (H - gridH_px) / 2 + cellH * 0.6
+
+    // Draw back-to-front: high s+p index first
+    for (let pOuter = P - 1; pOuter >= 0; pOuter--) {
+      for (let sOuter = S - 1; sOuter >= 0; sOuter--) {
+        const s = sOuter, p = pOuter
+
+        // Screen-space origin of this cell's bottom-centre
+        const cx = ox + s * stepS[0] + p * stepP[0]
+        const cy = oy + s * stepS[1] + p * stepP[1]
+
+        // 8 corners of the isometric box:
+        //  Top face (y-up = -cellH on screen), corners relative to cx,cy
+        //  Using iso coords: dx = ±COS30*cellW/2, dy_iso = ±SIN30*cellW/2*0.5
+        const hw = COS30 * cellW * 0.46   // half-width in screen x
+        const hd = SIN30 * cellW * 0.46   // half-depth contribution
+
+        // Bottom 4 corners (on ground plane)
+        const bl = [cx - hw, cy + hd]         // bottom-left
+        const br = [cx + hw, cy + hd]         // bottom-right
+        const bt = [cx,       cy - hd * 2]    // bottom-top (back)
+        const bb = [cx,       cy + hd * 2]    // bottom-bottom (front)
+
+        // Top 4 corners (shifted up by cellH)
+        const uH = cellH * 0.95
+        const tl = [bl[0], bl[1] - uH]
+        const tr = [br[0], br[1] - uH]
+        const tt = [bt[0], bt[1] - uH]
+        const tb = [bb[0], bb[1] - uH]
+
+        // ── Left face (series side) ──
         ctx.beginPath()
-        ctx.roundRect(x, y, cellW, cellH, r)
-        ctx.fillStyle = cellColor + '40'
-        ctx.fill()
-        ctx.strokeStyle = cellColor
-        ctx.lineWidth = 1.5
-        ctx.stroke()
-        // Voltage label
-        const v = this.voltagePerCell
-        ctx.font = `bold ${Math.min(10, cellH * 0.4)}px ${fontMono}`
+        ctx.moveTo(bl[0], bl[1])
+        ctx.lineTo(bt[0], bt[1])
+        ctx.lineTo(tt[0], tt[1])
+        ctx.lineTo(tl[0], tl[1])
+        ctx.closePath()
+        ctx.fillStyle = `rgba(${cellRgb},0.12)`
+        ctx.strokeStyle = `rgba(${cellRgb},0.5)`
+        ctx.lineWidth = 0.8
+        ctx.fill(); ctx.stroke()
+
+        // ── Right face (parallel side) ──
+        ctx.beginPath()
+        ctx.moveTo(br[0], br[1])
+        ctx.lineTo(bb[0], bb[1])
+        ctx.lineTo(tb[0], tb[1])
+        ctx.lineTo(tr[0], tr[1])
+        ctx.closePath()
+        ctx.fillStyle = `rgba(${cellRgb},0.18)`
+        ctx.strokeStyle = `rgba(${cellRgb},0.5)`
+        ctx.fill(); ctx.stroke()
+
+        // ── Top face (charged cap) ──
+        ctx.beginPath()
+        ctx.moveTo(tl[0], tl[1])
+        ctx.lineTo(tt[0], tt[1])
+        ctx.lineTo(tr[0], tr[1])
+        ctx.lineTo(tb[0], tb[1])
+        ctx.closePath()
+        ctx.fillStyle = `rgba(${cellRgb},${0.55 - dPct * 0.25})`
+        ctx.strokeStyle = `rgba(${cellRgb},0.9)`
+        ctx.lineWidth = 1
+        ctx.fill(); ctx.stroke()
+
+        // Voltage text on top face
+        const topCx = (tl[0] + tr[0] + tt[0] + tb[0]) / 4
+        const topCy = (tl[1] + tr[1] + tt[1] + tb[1]) / 4
+
+        const fontSize = Math.max(7, Math.min(11, cellW * 0.22))
+        ctx.font = `bold ${fontSize}px ${fontMono}`
         ctx.fillStyle = clrText
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(v.toFixed(2) + 'V', x + cellW / 2, y + cellH / 2)
+        ctx.fillText(this.voltagePerCell.toFixed(2) + 'V', topCx, topCy)
+
+        // Positive terminal nub on top
+        if (s === 0 && p === 0) {
+          ctx.beginPath()
+          ctx.arc(tt[0], tt[1] + 3, 3, 0, Math.PI * 2)
+          ctx.fillStyle = clrPrimary
+          ctx.fill()
+        }
       }
     }
 
-    // Pack voltage label
+    // ── Pack label ─────────────────────────────────────────────────────────────
     const packV = this.voltagePerCell * S
-    ctx.font = `bold 13px ${fontMono}`
+    ctx.font = `bold 12px ${fontMono}`
     ctx.fillStyle = clrPrimary
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText(`${packV.toFixed(1)}V  ${S}S${P > 1 ? P + 'P' : ''}`, W / 2, startY + P * (cellH + 4) + 4)
+    ctx.textBaseline = 'bottom'
+    ctx.fillText(
+      `${packV.toFixed(1)}V  ${S}S${P > 1 ? P + 'P' : ''}`,
+      W / 2, H - 14
+    )
 
-    // Discharge bar below grid
-    const barY = startY + P * (cellH + 4) + 24
-    const barH = 8
-    const barW = W - gridPadX * 2
+    // ── Discharge bar at bottom ────────────────────────────────────────────────
+    const barY = H - 10
+    const barW = W * 0.7
+    const barH = 5
+    const barX = (W - barW) / 2
     ctx.fillStyle = clrBorder
-    ctx.beginPath(); ctx.roundRect(gridPadX, barY, barW, barH, 4); ctx.fill()
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 3); ctx.fill()
     if (dPct > 0) {
-      ctx.fillStyle = cellColor
-      ctx.beginPath(); ctx.roundRect(gridPadX, barY, barW * dPct, barH, 4); ctx.fill()
+      ctx.fillStyle = `rgb(${cellRgb})`
+      ctx.beginPath(); ctx.roundRect(barX, barY, barW * dPct, barH, 3); ctx.fill()
     }
-    ctx.font = `10px ${fontMono}`
+    ctx.font = `9px ${fontSans}`
     ctx.fillStyle = clrMuted
     ctx.textAlign = 'right'
-    ctx.textBaseline = 'top'
-    ctx.fillText(`${Math.round(dPct * 100)}% used`, W - gridPadX, barY + barH + 2)
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`${Math.round(dPct * 100)}% used`, barX - 4, barY + barH / 2)
 
     ctx.restore()
   }

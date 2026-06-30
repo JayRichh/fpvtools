@@ -12,6 +12,6 @@ const { t } = useI18n()
   </div>
 </template>
 <style scoped>
-.power-view { max-width: 900px; margin: 0 auto; }
+.power-view { }
 .subtitle { color: var(--fpv-text-muted); margin-bottom: var(--fpv-space-lg); font-size: var(--fpv-font-label); }
 </style>

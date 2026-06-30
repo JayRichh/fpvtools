@@ -16,7 +16,7 @@ const { t } = useI18n()
   </div>
 </template>
 <style scoped>
-.rf-view { max-width: 1100px; margin: 0 auto; }
+.rf-view { }
 .subtitle { color: var(--fpv-text-muted); margin-bottom: var(--fpv-space-lg); font-size: var(--fpv-font-label); }
 .rf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--fpv-space-lg); }
 @media (max-width: 768px) { .rf-grid { grid-template-columns: 1fr; } }
