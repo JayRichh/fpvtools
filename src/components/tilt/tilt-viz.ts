@@ -44,7 +44,9 @@ export class TiltViz extends LitElement {
         position: absolute;
         top: 0;
         left: 0;
+        cursor: grab;
       }
+      canvas:active { cursor: grabbing; }
     `,
   ]
 
@@ -57,6 +59,36 @@ export class TiltViz extends LitElement {
   private _running = false
   private _dirty = true
   private _observer!: ResizeObserver
+
+  private _camPitch = -22 * DEG
+  private _camYaw   =  28 * DEG
+  private _orbiting = false
+  private _orbitX   = 0
+  private _orbitY   = 0
+
+  private _startOrbit = (e: MouseEvent) => {
+    this._orbiting = true; this._orbitX = e.clientX; this._orbitY = e.clientY
+  }
+  private _moveOrbit = (e: MouseEvent) => {
+    if (!this._orbiting) return
+    this._camYaw   += (e.clientX - this._orbitX) * 0.006
+    this._camPitch  = Math.max(-1.45, Math.min(-0.04, this._camPitch + (e.clientY - this._orbitY) * 0.006))
+    this._orbitX = e.clientX; this._orbitY = e.clientY
+    this._dirty = true
+  }
+  private _endOrbit   = () => { this._orbiting = false }
+  private _touchOrbitStart = (e: TouchEvent) => {
+    if (e.touches.length !== 1) return
+    this._orbiting = true; this._orbitX = e.touches[0].clientX; this._orbitY = e.touches[0].clientY
+  }
+  private _touchOrbitMove = (e: TouchEvent) => {
+    if (!this._orbiting || e.touches.length !== 1) return
+    this._camYaw   += (e.touches[0].clientX - this._orbitX) * 0.006
+    this._camPitch  = Math.max(-1.45, Math.min(-0.04, this._camPitch + (e.touches[0].clientY - this._orbitY) * 0.006))
+    this._orbitX = e.touches[0].clientX; this._orbitY = e.touches[0].clientY
+    this._dirty = true
+  }
+  private _resetOrbit = () => { this._camPitch = -22 * DEG; this._camYaw = 28 * DEG; this._dirty = true }
 
   firstUpdated() {
     this._canvas = this.shadowRoot!.querySelector('canvas')!
@@ -78,6 +110,13 @@ export class TiltViz extends LitElement {
     this._canvas.height = Math.round(h * dpr)
     this._running = true
     this._loop()
+    this._canvas.addEventListener('mousedown', this._startOrbit)
+    window.addEventListener('mousemove', this._moveOrbit)
+    window.addEventListener('mouseup', this._endOrbit)
+    this._canvas.addEventListener('touchstart', this._touchOrbitStart, { passive: true })
+    window.addEventListener('touchmove', this._touchOrbitMove, { passive: true })
+    window.addEventListener('touchend', this._endOrbit)
+    this._canvas.addEventListener('dblclick', this._resetOrbit)
   }
 
   updated() { this._dirty = true }
@@ -87,6 +126,10 @@ export class TiltViz extends LitElement {
     this._running = false
     cancelAnimationFrame(this._rafId)
     this._observer?.disconnect()
+    window.removeEventListener('mousemove', this._moveOrbit)
+    window.removeEventListener('mouseup', this._endOrbit)
+    window.removeEventListener('touchmove', this._touchOrbitMove)
+    window.removeEventListener('touchend', this._endOrbit)
   }
 
   private _loop() {
@@ -122,9 +165,9 @@ export class TiltViz extends LitElement {
     const scale = Math.min(W, H) * 0.30
     const focalLen = 4.0
 
-    // Camera view: slightly above and to the right, looking forward-left
-    const camPitch = -22 * DEG
-    const camYaw   =  28 * DEG
+    // Camera view (orbit-controlled)
+    const camPitch = this._camPitch
+    const camYaw   = this._camYaw
 
     const xform = (p: V3): [number, number, number] => {
       let v = rotX(p, camPitch)
