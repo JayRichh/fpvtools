@@ -2,10 +2,28 @@ import { LitElement, html, css } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
 
+type V3 = [number, number, number]
+
+const TAU = Math.PI * 2
+const DEG = Math.PI / 180
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
+function rotX(p: V3, a: number): V3 {
+  const c = Math.cos(a), s = Math.sin(a)
+  return [p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c]
+}
+function rotY(p: V3, a: number): V3 {
+  const c = Math.cos(a), s = Math.sin(a)
+  return [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c]
+}
+function project(p: V3, fl: number, cx: number, cy: number): [number, number, number] {
+  const z = p[2] + fl
+  if (z < 0.1) return [cx, cy, 0]
+  const s = fl / z
+  return [cx + p[0] * s, cy - p[1] * s, s]
+}
+
 function lerpColor(t: number): [number, number, number] {
-  // green → yellow → red
   const r = t < 0.5 ? Math.round(60 + 195 * t * 2) : 255
   const g = t < 0.5 ? 200 : Math.round(200 * (1 - (t - 0.5) * 2))
   return [r, g, 60]
@@ -25,7 +43,16 @@ export class PackViz extends LitElement {
         border-radius: var(--fpv-radius-md);
         overflow: hidden;
       }
-      canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        cursor: grab;
+      }
+      canvas:active { cursor: grabbing; }
     `,
   ]
 
@@ -41,6 +68,36 @@ export class PackViz extends LitElement {
   private _dirty = true
   private _observer!: ResizeObserver
 
+  private _camPitch = -30 * DEG
+  private _camYaw   = -38 * DEG
+  private _orbiting = false
+  private _orbitX   = 0
+  private _orbitY   = 0
+
+  private _startOrbit = (e: MouseEvent) => {
+    this._orbiting = true; this._orbitX = e.clientX; this._orbitY = e.clientY
+  }
+  private _moveOrbit = (e: MouseEvent) => {
+    if (!this._orbiting) return
+    this._camYaw   += (e.clientX - this._orbitX) * 0.006
+    this._camPitch  = Math.max(-1.45, Math.min(-0.04, this._camPitch + (e.clientY - this._orbitY) * 0.006))
+    this._orbitX = e.clientX; this._orbitY = e.clientY
+    this._dirty = true
+  }
+  private _endOrbit   = () => { this._orbiting = false }
+  private _touchOrbitStart = (e: TouchEvent) => {
+    if (e.touches.length !== 1) return
+    this._orbiting = true; this._orbitX = e.touches[0].clientX; this._orbitY = e.touches[0].clientY
+  }
+  private _touchOrbitMove = (e: TouchEvent) => {
+    if (!this._orbiting || e.touches.length !== 1) return
+    this._camYaw   += (e.touches[0].clientX - this._orbitX) * 0.006
+    this._camPitch  = Math.max(-1.45, Math.min(-0.04, this._camPitch + (e.touches[0].clientY - this._orbitY) * 0.006))
+    this._orbitX = e.touches[0].clientX; this._orbitY = e.touches[0].clientY
+    this._dirty = true
+  }
+  private _resetOrbit = () => { this._camPitch = -30 * DEG; this._camYaw = -38 * DEG; this._dirty = true }
+
   firstUpdated() {
     this._canvas = this.shadowRoot!.querySelector('canvas')!
     const ctx = this._canvas.getContext('2d')
@@ -51,6 +108,13 @@ export class PackViz extends LitElement {
     this._resize()
     this._running = true
     this._loop()
+    this._canvas.addEventListener('mousedown', this._startOrbit)
+    window.addEventListener('mousemove', this._moveOrbit)
+    window.addEventListener('mouseup', this._endOrbit)
+    this._canvas.addEventListener('touchstart', this._touchOrbitStart, { passive: true })
+    window.addEventListener('touchmove', this._touchOrbitMove, { passive: true })
+    window.addEventListener('touchend', this._endOrbit)
+    this._canvas.addEventListener('dblclick', this._resetOrbit)
   }
 
   updated() { this._dirty = true }
@@ -60,6 +124,10 @@ export class PackViz extends LitElement {
     this._running = false
     cancelAnimationFrame(this._rafId)
     this._observer?.disconnect()
+    window.removeEventListener('mousemove', this._moveOrbit)
+    window.removeEventListener('mouseup', this._endOrbit)
+    window.removeEventListener('touchmove', this._touchOrbitMove)
+    window.removeEventListener('touchend', this._endOrbit)
   }
 
   private _loop() {
@@ -106,148 +174,137 @@ export class PackViz extends LitElement {
     const [cr, cg, cb] = lerpColor(dPct)
     const cellRgb = `${cr},${cg},${cb}`
 
-    // ── Isometric layout ─────────────────────────────────────────────────────
-    // Each cell is a box. We use a fixed iso step and scale to fit W×H.
-    // iso basis vectors:
-    //   s direction (series): right+down → (cos30, sin30*0.5)
-    //   p direction (parallel): left+down → (-cos30, sin30*0.5)
-    // box height: goes upward in screen (negative y)
+    const cx = W * 0.5, cy = H * 0.46
+    const focalLen = 4.5
+    const camPitch = this._camPitch
+    const camYaw   = this._camYaw
 
-    const COS30 = Math.cos(Math.PI / 6)
-    const SIN30 = Math.sin(Math.PI / 6)
+    const gridSpan = Math.max(S, P) * 0.85
+    const scale = Math.min(W, H) / gridSpan * 0.36
 
-    // Rough cell size fitting: total iso width ≈ (S+P)*COS30*cellW
-    const availW = W * 0.88
-    const availH = H * 0.72
-    const cellW = Math.min(
-      availW / ((S + P) * COS30),
-      availH / ((S + P) * SIN30 * 0.5 + 1.4),
-      38
-    )
-    const cellH = cellW * 1.4  // cylinder height
+    const xform = (p: V3): [number, number, number] => {
+      let v = rotX(p, camPitch)
+      v = rotY(v, camYaw)
+      return project([v[0] * scale, v[1] * scale, v[2] * scale], focalLen * scale, cx, cy)
+    }
 
-    // iso step per cell in each direction
-    const stepS  = [ COS30 * cellW,  SIN30 * cellW * 0.5]
-    const stepP  = [-COS30 * cellW,  SIN30 * cellW * 0.5]
+    // Cell box dimensions in world units
+    const cSpacingX = 0.82
+    const cSpacingZ = 0.82
+    const hw = 0.31   // half-width X
+    const hh = 0.58   // half-height Y
+    const hd = 0.31   // half-depth Z
 
-    // Grid centre in screen space
-    // offset so the whole grid is centered
-    const gridW_px = (S + P) * COS30 * cellW
-    const gridH_px = (S + P) * SIN30 * cellW * 0.5 + cellH
-    const ox = W / 2
-    const oy = (H - gridH_px) / 2 + cellH * 0.6
+    type CellDraw = { avgZ: number; draw: () => void }
+    const cells: CellDraw[] = []
 
-    // Draw back-to-front: high s+p index first
-    for (let pOuter = P - 1; pOuter >= 0; pOuter--) {
-      for (let sOuter = S - 1; sOuter >= 0; sOuter--) {
-        const s = sOuter, p = pOuter
+    for (let s = 0; s < S; s++) {
+      for (let p = 0; p < P; p++) {
+        const wx = (p - (P - 1) / 2) * cSpacingX
+        const wz = (s - (S - 1) / 2) * cSpacingZ
+        const wy = 0
 
-        // Screen-space origin of this cell's bottom-centre
-        const cx = ox + s * stepS[0] + p * stepP[0]
-        const cy = oy + s * stepS[1] + p * stepP[1]
+        const verts: V3[] = [
+          [wx - hw, wy - hh, wz - hd],
+          [wx + hw, wy - hh, wz - hd],
+          [wx + hw, wy + hh, wz - hd],
+          [wx - hw, wy + hh, wz - hd],
+          [wx - hw, wy - hh, wz + hd],
+          [wx + hw, wy - hh, wz + hd],
+          [wx + hw, wy + hh, wz + hd],
+          [wx - hw, wy + hh, wz + hd],
+        ]
+        const pv = verts.map(v => xform(v))
+        const avgZ = pv.reduce((acc, v) => acc + v[2], 0) / pv.length
 
-        // 8 corners of the isometric box:
-        //  Top face (y-up = -cellH on screen), corners relative to cx,cy
-        //  Using iso coords: dx = ±COS30*cellW/2, dy_iso = ±SIN30*cellW/2*0.5
-        const hw = COS30 * cellW * 0.46   // half-width in screen x
-        const hd = SIN30 * cellW * 0.46   // half-depth contribution
+        cells.push({
+          avgZ,
+          draw: () => {
+            // Draw: top face, then side faces based on camera angle
+            const faces = [
+              { idxs: [3, 2, 6, 7], bright: 0.65 },  // top
+              { idxs: [4, 5, 6, 7], bright: 0.30 },   // front (+Z)
+              { idxs: [1, 5, 6, 2], bright: 0.20 },   // right (+X)
+            ]
 
-        // Bottom 4 corners (on ground plane)
-        const bl = [cx - hw, cy + hd]         // bottom-left
-        const br = [cx + hw, cy + hd]         // bottom-right
-        const bt = [cx,       cy - hd * 2]    // bottom-top (back)
-        const bb = [cx,       cy + hd * 2]    // bottom-bottom (front)
+            faces.sort((a, b) => {
+              const za = a.idxs.reduce((acc, i) => acc + pv[i][2], 0) / a.idxs.length
+              const zb = b.idxs.reduce((acc, i) => acc + pv[i][2], 0) / b.idxs.length
+              return za - zb
+            })
 
-        // Top 4 corners (shifted up by cellH)
-        const uH = cellH * 0.95
-        const tl = [bl[0], bl[1] - uH]
-        const tr = [br[0], br[1] - uH]
-        const tt = [bt[0], bt[1] - uH]
-        const tb = [bb[0], bb[1] - uH]
+            for (const face of faces) {
+              const pts = face.idxs.map(i => pv[i])
+              ctx.beginPath()
+              ctx.moveTo(pts[0][0], pts[0][1])
+              for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1])
+              ctx.closePath()
+              ctx.fillStyle = `rgba(${cellRgb},${face.bright})`
+              ctx.strokeStyle = `rgba(${cellRgb},0.7)`
+              ctx.lineWidth = 0.7
+              ctx.fill(); ctx.stroke()
+            }
 
-        // ── Left face (series side) ──
-        ctx.beginPath()
-        ctx.moveTo(bl[0], bl[1])
-        ctx.lineTo(bt[0], bt[1])
-        ctx.lineTo(tt[0], tt[1])
-        ctx.lineTo(tl[0], tl[1])
-        ctx.closePath()
-        ctx.fillStyle = `rgba(${cellRgb},0.12)`
-        ctx.strokeStyle = `rgba(${cellRgb},0.5)`
-        ctx.lineWidth = 0.8
-        ctx.fill(); ctx.stroke()
+            // Voltage on top face centroid
+            const tCx = pv[3][0] + pv[2][0] + pv[6][0] + pv[7][0]
+            const tCy = pv[3][1] + pv[2][1] + pv[6][1] + pv[7][1]
+            const topScale = (pv[3][2] + pv[2][2] + pv[6][2] + pv[7][2]) / 4
+            const fs = Math.max(6, Math.min(11, 9 * topScale))
+            ctx.font = `bold ${fs}px ${fontMono}`
+            ctx.fillStyle = clrText
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+            ctx.fillText(this.voltagePerCell.toFixed(2) + 'V', tCx / 4, tCy / 4)
 
-        // ── Right face (parallel side) ──
-        ctx.beginPath()
-        ctx.moveTo(br[0], br[1])
-        ctx.lineTo(bb[0], bb[1])
-        ctx.lineTo(tb[0], tb[1])
-        ctx.lineTo(tr[0], tr[1])
-        ctx.closePath()
-        ctx.fillStyle = `rgba(${cellRgb},0.18)`
-        ctx.strokeStyle = `rgba(${cellRgb},0.5)`
-        ctx.fill(); ctx.stroke()
+            // (+) terminal nub on series-first cell
+            if (s === 0 && p === 0) {
+              const nub = pv[2]
+              ctx.beginPath(); ctx.arc(nub[0], nub[1], 3.5 * topScale, 0, TAU)
+              ctx.fillStyle = clrPrimary; ctx.fill()
+            }
 
-        // ── Top face (charged cap) ──
-        ctx.beginPath()
-        ctx.moveTo(tl[0], tl[1])
-        ctx.lineTo(tt[0], tt[1])
-        ctx.lineTo(tr[0], tr[1])
-        ctx.lineTo(tb[0], tb[1])
-        ctx.closePath()
-        ctx.fillStyle = `rgba(${cellRgb},${0.55 - dPct * 0.25})`
-        ctx.strokeStyle = `rgba(${cellRgb},0.9)`
-        ctx.lineWidth = 1
-        ctx.fill(); ctx.stroke()
-
-        // Voltage text on top face
-        const topCx = (tl[0] + tr[0] + tt[0] + tb[0]) / 4
-        const topCy = (tl[1] + tr[1] + tt[1] + tb[1]) / 4
-
-        const fontSize = Math.max(7, Math.min(11, cellW * 0.22))
-        ctx.font = `bold ${fontSize}px ${fontMono}`
-        ctx.fillStyle = clrText
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(this.voltagePerCell.toFixed(2) + 'V', topCx, topCy)
-
-        // Positive terminal nub on top
-        if (s === 0 && p === 0) {
-          ctx.beginPath()
-          ctx.arc(tt[0], tt[1] + 3, 3, 0, Math.PI * 2)
-          ctx.fillStyle = clrPrimary
-          ctx.fill()
-        }
+            // Bus wire connection along series direction
+            if (s < S - 1) {
+              const nextWZ = wz + cSpacingZ
+              const a = xform([wx, wy + hh, wz + hd])
+              const b = xform([wx, wy + hh, nextWZ - hd])
+              ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1])
+              ctx.strokeStyle = clrBorder; ctx.lineWidth = 1.5; ctx.stroke()
+            }
+          },
+        })
       }
     }
 
-    // ── Pack label ─────────────────────────────────────────────────────────────
+    cells.sort((a, b) => a.avgZ - b.avgZ)
+    for (const c of cells) c.draw()
+
+    // Pack label
     const packV = this.voltagePerCell * S
     ctx.font = `bold 12px ${fontMono}`
     ctx.fillStyle = clrPrimary
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'bottom'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
     ctx.fillText(
       `${packV.toFixed(1)}V  ${S}S${P > 1 ? P + 'P' : ''}`,
       W / 2, H - 14
     )
 
-    // ── Discharge bar at bottom ────────────────────────────────────────────────
-    const barY = H - 10
-    const barW = W * 0.7
-    const barH = 5
-    const barX = (W - barW) / 2
+    // Discharge bar
+    const barY = H - 10, barH = 5, barW = W * 0.68, barX = (W - barW) / 2
     ctx.fillStyle = clrBorder
     ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 3); ctx.fill()
     if (dPct > 0) {
       ctx.fillStyle = `rgb(${cellRgb})`
       ctx.beginPath(); ctx.roundRect(barX, barY, barW * dPct, barH, 3); ctx.fill()
     }
-    ctx.font = `9px ${fontSans}`
-    ctx.fillStyle = clrMuted
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'middle'
+    ctx.font = `9px ${fontSans}`; ctx.fillStyle = clrMuted
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle'
     ctx.fillText(`${Math.round(dPct * 100)}% used`, barX - 4, barY + barH / 2)
+
+    // Hint
+    ctx.font = `9px ${fontSans}`; ctx.fillStyle = clrMuted
+    ctx.globalAlpha = 0.4; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
+    ctx.fillText('drag to orbit · dbl-click to reset', W / 2, H - 20)
+    ctx.globalAlpha = 1
 
     ctx.restore()
   }

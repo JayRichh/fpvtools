@@ -126,7 +126,7 @@ export class PidSimulator extends LitElement {
       }
 
       fpv-quad-preview-3d {
-        height: 220px;
+        height: clamp(300px, 42vh, 480px);
       }
 
       .metrics-grid {

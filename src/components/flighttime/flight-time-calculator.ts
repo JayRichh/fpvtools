@@ -27,7 +27,7 @@ export class FlightTimeCalculator extends LitElement {
         align-items: start;
       }
       @media (max-width: 768px) { .lower { grid-template-columns: 1fr; } }
-      flight-time-viz { height: 260px; }
+      flight-time-viz { height: clamp(300px, 44vh, 460px); }
 
       .rows {
         display: flex;

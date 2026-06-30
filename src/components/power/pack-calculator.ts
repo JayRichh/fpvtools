@@ -321,7 +321,7 @@ export class PackCalculator extends LitElement {
         </div>
         <div class="results">
           <pack-viz
-            style="height:160px"
+            style="height:clamp(260px,36vh,380px)"
             .cellCount=${p.series}
             .parallelCount=${p.parallel}
             .voltagePerCell=${p.cell.nominalV}

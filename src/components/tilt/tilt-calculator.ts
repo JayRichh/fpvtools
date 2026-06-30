@@ -103,7 +103,7 @@ export class TiltCalculator extends LitElement {
     return html`
       <div class="layout">
         <tilt-viz
-          style="height:280px"
+          style="height:clamp(320px,48vh,520px)"
           .tiltDeg=${this._tilt}
           .fovDeg=${FOV_DEG}
         ></tilt-viz>
