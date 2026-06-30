@@ -6,6 +6,7 @@
   --fpv-bg: #0a0a0f;
   --fpv-surface: #14141f;
   --fpv-surface-2: #1e1e2e;
+  --fpv-surface-3: #252535;
   --fpv-border: #2a2a3a;
 
   /* Text */
@@ -14,22 +15,24 @@
 
   /* Brand */
   --fpv-primary: #00d4aa;
+  --fpv-secondary: #4488ff;
   --fpv-accent: #ff6b35;
+  --fpv-accent-2: #f5c842;
 
   /* Semantic */
   --fpv-error: #ff4466;
   --fpv-success: #44cc88;
-  --fpv-info: #4488ff;
+  --fpv-info: #22ccee;
 
   /* Scope / channel colors */
   --fpv-scope-setpoint: #00d4aa;
   --fpv-scope-gyro: #4488ff;
   --fpv-scope-error: #ff4466;
-  --fpv-scope-p: #ffaa33;
-  --fpv-scope-i: #aa44ff;
-  --fpv-scope-d: #44ccaa;
-  --fpv-scope-ff: #ff6b35;
-  --fpv-scope-motor: #888888;
+  --fpv-scope-p: #ffaa00;
+  --fpv-scope-i: #bb44ff;
+  --fpv-scope-d: #00ccff;
+  --fpv-scope-ff: #ff7733;
+  --fpv-scope-motor: #aaaaaa;
 
   /* Spacing */
   --fpv-space-xs: 4px;
@@ -49,9 +52,15 @@
   /* Focus */
   --fpv-focus-ring: color-mix(in srgb, var(--fpv-primary) 20%, transparent);
 
+  /* Glow / Shadow */
+  --fpv-glow-primary: 0 0 12px rgba(0, 212, 170, 0.4);
+  --fpv-glow-accent: 0 0 12px rgba(255, 107, 53, 0.4);
+
   /* Typography */
-  --fpv-font-body: 14px;
+  --fpv-font-xs: 10px;
   --fpv-font-label: 12px;
+  --fpv-font-body: 14px;
+  --fpv-font-lg: 16px;
   --fpv-font-mono: 'JetBrains Mono', monospace;
   --fpv-font-sans: 'Inter', system-ui, sans-serif;
 }
@@ -60,14 +69,27 @@
   --fpv-bg: #f4f4f8;
   --fpv-surface: #ffffff;
   --fpv-surface-2: #eaeaf2;
+  --fpv-surface-3: #e0e0ec;
   --fpv-border: #d0d0e0;
   --fpv-text: #14141f;
   --fpv-text-muted: #60607a;
   --fpv-primary: #00a882;
+  --fpv-secondary: #2255cc;
   --fpv-accent: #e05520;
+  --fpv-accent-2: #c8a000;
   --fpv-error: #cc2244;
   --fpv-success: #228855;
-  --fpv-info: #2266cc;
+  --fpv-info: #0099bb;
+  --fpv-scope-setpoint: #007a5e;
+  --fpv-scope-gyro: #2255cc;
+  --fpv-scope-error: #cc2244;
+  --fpv-scope-p: #cc7700;
+  --fpv-scope-i: #7722cc;
+  --fpv-scope-d: #0088cc;
+  --fpv-scope-ff: #cc4411;
+  --fpv-scope-motor: #555568;
+  --fpv-glow-primary: 0 0 8px rgba(0, 168, 130, 0.25);
+  --fpv-glow-accent: 0 0 8px rgba(224, 85, 32, 0.25);
 }
 
 @media (prefers-color-scheme: light) {
@@ -75,13 +97,26 @@
     --fpv-bg: #f4f4f8;
     --fpv-surface: #ffffff;
     --fpv-surface-2: #eaeaf2;
+    --fpv-surface-3: #e0e0ec;
     --fpv-border: #d0d0e0;
     --fpv-text: #14141f;
     --fpv-text-muted: #60607a;
     --fpv-primary: #00a882;
+    --fpv-secondary: #2255cc;
     --fpv-accent: #e05520;
+    --fpv-accent-2: #c8a000;
     --fpv-error: #cc2244;
     --fpv-success: #228855;
-    --fpv-info: #2266cc;
+    --fpv-info: #0099bb;
+    --fpv-scope-setpoint: #007a5e;
+    --fpv-scope-gyro: #2255cc;
+    --fpv-scope-error: #cc2244;
+    --fpv-scope-p: #cc7700;
+    --fpv-scope-i: #7722cc;
+    --fpv-scope-d: #0088cc;
+    --fpv-scope-ff: #cc4411;
+    --fpv-scope-motor: #555568;
+    --fpv-glow-primary: 0 0 8px rgba(0, 168, 130, 0.25);
+    --fpv-glow-accent: 0 0 8px rgba(224, 85, 32, 0.25);
   }
 }
