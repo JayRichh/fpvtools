@@ -325,6 +325,7 @@ export class FpvScope extends LitElement {
     const textMuted = cs.getPropertyValue('--fpv-text-muted').trim()|| '#8888a0'
     const surface2  = cs.getPropertyValue('--fpv-surface-2').trim() || '#1e1e2e'
     const fontLabel = cs.getPropertyValue('--fpv-font-label').trim()|| '12px'
+    const fontMono  = cs.getPropertyValue('--fpv-font-mono').trim() || 'JetBrains Mono, monospace'
 
     ctx.fillStyle = surface
     ctx.fillRect(0, 0, W, H)
@@ -387,7 +388,7 @@ export class FpvScope extends LitElement {
     const visEnd   = this._zoomEnd   * this.timeMs
     ctx.save()
     ctx.fillStyle = textMuted
-    ctx.font = `${fontLabel} monospace`
+    ctx.font = `${fontLabel} ${fontMono}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
     for (let i = 0; i <= divs; i++) {
@@ -401,7 +402,7 @@ export class FpvScope extends LitElement {
     // Y-axis value labels
     ctx.save()
     ctx.fillStyle = textMuted
-    ctx.font = `${fontLabel} monospace`
+    ctx.font = `${fontLabel} ${fontMono}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
     for (let j = 0; j <= divs; j++) {
@@ -559,7 +560,7 @@ export class FpvScope extends LitElement {
 
     // Measure tooltip dimensions
     ctx.save()
-    ctx.font = `${fontLabel} monospace`
+    ctx.font = `${fontLabel} ${fontMono}`
 
     const lineH   = 16
     const padX    = 7

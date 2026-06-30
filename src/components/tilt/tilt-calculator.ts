@@ -65,7 +65,7 @@ export class TiltCalculator extends LitElement {
       canvas {
         display: block;
         width: 100%;
-        height: 200px;
+        height: 220px;
         background: var(--fpv-surface-2);
         border: 1px solid var(--fpv-border);
         border-radius: var(--fpv-radius-sm);
@@ -108,12 +108,35 @@ export class TiltCalculator extends LitElement {
     return parseFloat(n.toFixed(digits)).toString() + (unit ? ' ' + unit : '')
   }
 
+  private _ro: ResizeObserver | null = null
+  private _rafId = 0
+  private _dirty = true
+
   override firstUpdated() {
-    this._draw()
+    this._ro = new ResizeObserver(() => { this._dirty = true })
+    this._ro.observe(this._canvas)
+    this._dirty = true
+    this._loop()
   }
 
   override updated() {
-    this._draw()
+    this._dirty = true
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback()
+    this._ro?.disconnect()
+    cancelAnimationFrame(this._rafId)
+  }
+
+  private _loop() {
+    this._rafId = requestAnimationFrame(() => {
+      if (this._dirty) {
+        this._draw()
+        this._dirty = false
+      }
+      this._loop()
+    })
   }
 
   private _draw() {
@@ -123,10 +146,13 @@ export class TiltCalculator extends LitElement {
     if (!ctx) return
 
     const dpr = window.devicePixelRatio || 1
-    const W = canvas.offsetWidth || 500
-    const H = 200
-    canvas.width = Math.round(W * dpr)
-    canvas.height = Math.round(H * dpr)
+    const rect = canvas.getBoundingClientRect()
+    const W = Math.max(rect.width, 100)
+    const H = Math.max(rect.height, 100)
+    const bw = Math.round(W * dpr)
+    const bh = Math.round(H * dpr)
+    if (canvas.width !== bw) canvas.width = bw
+    if (canvas.height !== bh) canvas.height = bh
 
     ctx.save()
     ctx.scale(dpr, dpr)
@@ -136,44 +162,64 @@ export class TiltCalculator extends LitElement {
     const textMuted = cs.getPropertyValue('--fpv-text-muted').trim() || '#8888a0'
     const textColor = cs.getPropertyValue('--fpv-text').trim() || '#e0e0e8'
     const surface2 = cs.getPropertyValue('--fpv-surface-2').trim() || '#1e1e2e'
+    const border = cs.getPropertyValue('--fpv-border').trim() || '#2a2a3e'
     const fontMono = cs.getPropertyValue('--fpv-font-mono').trim() || 'JetBrains Mono, monospace'
+    const fontSans = cs.getPropertyValue('--fpv-font-sans').trim() || 'Inter, system-ui, sans-serif'
     const accent = '#ffaa33'
 
     ctx.clearRect(0, 0, W, H)
 
-    const groundY = H - 28
-    const quadX = Math.round(W * 0.22)
-    const quadY = 55
-
-    // Ground shading
-    ctx.fillStyle = surface2
-    ctx.fillRect(0, groundY, W, H - groundY)
-
-    // Ground line
-    ctx.beginPath()
-    ctx.moveTo(0, groundY)
-    ctx.lineTo(W, groundY)
-    ctx.strokeStyle = textMuted
-    ctx.lineWidth = 2
-    ctx.setLineDash([])
-    ctx.stroke()
-
-    // Ground label
-    ctx.font = `10px ${fontMono}`
-    ctx.fillStyle = textMuted
-    ctx.fillText(this._i18n.t('tilt.canvas_ground'), 4, groundY - 4)
-
-    // FOV cone calculations
+    const groundY = H - 32
+    const quadX = Math.round(W * 0.2)
+    const quadY = 60
     const tiltRad = (this._tilt * Math.PI) / 180
     const fovHalfRad = ((FOV_DEG / 2) * Math.PI) / 180
     const upperAngle = tiltRad - fovHalfRad
     const lowerAngle = tiltRad + fovHalfRad
 
-    // Compute endpoint for an angle, clamped to canvas/ground bounds
+    // Ground with gradient
+    const gGrad = ctx.createLinearGradient(0, groundY, 0, H)
+    gGrad.addColorStop(0, surface2)
+    gGrad.addColorStop(1, border)
+    ctx.fillStyle = gGrad
+    ctx.fillRect(0, groundY, W, H - groundY)
+
+    ctx.beginPath()
+    ctx.moveTo(0, groundY)
+    ctx.lineTo(W, groundY)
+    ctx.strokeStyle = textMuted
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+
+    ctx.font = `11px ${fontMono}`
+    ctx.fillStyle = textMuted
+    ctx.textBaseline = 'top'
+    ctx.fillText(this._i18n.t('tilt.canvas_ground'), 4, groundY + 4)
+
+    // Altitude dashed line (quad to ground)
+    ctx.beginPath()
+    ctx.moveTo(quadX, quadY + 8)
+    ctx.lineTo(quadX, groundY)
+    ctx.setLineDash([3, 3])
+    ctx.strokeStyle = textMuted
+    ctx.lineWidth = 1
+    ctx.globalAlpha = 0.4
+    ctx.stroke()
+    ctx.globalAlpha = 1
+    ctx.setLineDash([])
+
+    ctx.font = `10px ${fontMono}`
+    ctx.fillStyle = textMuted
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`${ALTITUDE_M}m`, quadX - 6, (quadY + groundY) / 2)
+    ctx.textAlign = 'left'
+
+    // FOV cone endpoint helper
     const fovEndpoint = (angle: number): [number, number] => {
       const dx = Math.cos(angle)
       const dy = Math.sin(angle)
-      let t = 800 // large max distance
+      let t = 800
       if (dx > 0) t = Math.min(t, (W - quadX - 4) / dx)
       if (dy > 0) t = Math.min(t, (groundY - quadY) / dy)
       if (dy < 0) t = Math.min(t, (4 - quadY) / dy)
@@ -184,43 +230,66 @@ export class TiltCalculator extends LitElement {
     const [ux, uy] = fovEndpoint(upperAngle)
     const [lx, ly] = fovEndpoint(lowerAngle)
 
-    // FOV fill
+    // FOV fill with gradient
+    const fovGrad = ctx.createLinearGradient(quadX, quadY, quadX + 200, quadY + 100)
+    fovGrad.addColorStop(0, primary + '25')
+    fovGrad.addColorStop(1, primary + '08')
     ctx.beginPath()
     ctx.moveTo(quadX, quadY)
     ctx.lineTo(ux, uy)
     ctx.lineTo(lx, ly)
     ctx.closePath()
-    ctx.fillStyle = primary + '18'
+    ctx.fillStyle = fovGrad
     ctx.fill()
 
     // FOV boundary lines
     ctx.strokeStyle = primary
     ctx.lineWidth = 1.5
-    ctx.setLineDash([])
+    ctx.lineCap = 'round'
     ctx.beginPath()
-    ctx.moveTo(quadX, quadY)
-    ctx.lineTo(ux, uy)
+    ctx.moveTo(quadX, quadY); ctx.lineTo(ux, uy)
     ctx.stroke()
-
     ctx.beginPath()
-    ctx.moveTo(quadX, quadY)
-    ctx.lineTo(lx, ly)
+    ctx.moveTo(quadX, quadY); ctx.lineTo(lx, ly)
     ctx.stroke()
 
     // Center tilt direction (dashed)
-    const [cx, cy] = fovEndpoint(tiltRad)
+    const [cxp, cyp] = fovEndpoint(tiltRad)
     ctx.beginPath()
     ctx.moveTo(quadX, quadY)
-    ctx.lineTo(cx, cy)
+    ctx.lineTo(cxp, cyp)
     ctx.setLineDash([4, 4])
     ctx.strokeStyle = primary
     ctx.lineWidth = 1
-    ctx.globalAlpha = 0.5
+    ctx.globalAlpha = 0.45
     ctx.stroke()
     ctx.globalAlpha = 1
     ctx.setLineDash([])
 
-    // Horizon dashed line (horizontal at quad altitude)
+    // Tilt angle arc
+    const arcR = 28
+    ctx.beginPath()
+    ctx.arc(quadX, quadY, arcR, 0, tiltRad)
+    ctx.strokeStyle = primary
+    ctx.lineWidth = 1.5
+    ctx.globalAlpha = 0.7
+    ctx.stroke()
+    ctx.globalAlpha = 1
+
+    // Tilt angle label near arc
+    const labelAngle = tiltRad / 2
+    const labelR = arcR + 10
+    ctx.font = `bold 11px ${fontSans}`
+    ctx.fillStyle = primary
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(
+      `${this._tilt}°`,
+      quadX + Math.cos(labelAngle) * labelR,
+      quadY + Math.sin(labelAngle) * labelR
+    )
+
+    // Horizon line
     const horizInFov = 0 >= upperAngle && 0 <= lowerAngle
     if (horizInFov) {
       ctx.beginPath()
@@ -228,80 +297,125 @@ export class TiltCalculator extends LitElement {
       ctx.lineTo(W - 10, quadY)
       ctx.setLineDash([6, 4])
       ctx.strokeStyle = accent
-      ctx.lineWidth = 1.2
+      ctx.lineWidth = 1
       ctx.stroke()
       ctx.setLineDash([])
-      ctx.font = `10px ${fontMono}`
+      ctx.font = `11px ${fontMono}`
       ctx.fillStyle = accent
+      ctx.textAlign = 'right'
       ctx.fillText(
         this._i18n.t('tilt.canvas_horizon', { pct: this._horizonPct().toFixed(0) }),
-        W - 160,
-        quadY - 4
+        W - 8,
+        quadY - 6
       )
+      ctx.textAlign = 'left'
     }
 
-    // Ground contact dot (where lower FOV hits the ground)
+    // Ground contact dot
     if (lowerAngle > 0 && lowerAngle < Math.PI / 2) {
       const t = (groundY - quadY) / Math.sin(lowerAngle)
       if (t > 0) {
         const gx = quadX + Math.cos(lowerAngle) * t
         if (gx > 0 && gx < W) {
+          // Distance label on ground
+          const distPx = gx - quadX
+          if (distPx > 30) {
+            ctx.beginPath()
+            ctx.moveTo(quadX, groundY + 8)
+            ctx.lineTo(gx, groundY + 8)
+            ctx.strokeStyle = primary
+            ctx.lineWidth = 1
+            ctx.globalAlpha = 0.5
+            ctx.stroke()
+            ctx.globalAlpha = 1
+            ctx.font = `10px ${fontMono}`
+            ctx.fillStyle = primary
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'top'
+            const dist = this._groundDist()
+            if (isFinite(dist)) {
+              ctx.fillText(`${dist.toFixed(1)}m`, (quadX + gx) / 2, groundY + 12)
+            }
+            ctx.textAlign = 'left'
+          }
+
           ctx.beginPath()
-          ctx.arc(gx, groundY, 4, 0, Math.PI * 2)
+          ctx.arc(gx, groundY, 5, 0, Math.PI * 2)
           ctx.fillStyle = primary
           ctx.fill()
+          ctx.beginPath()
+          ctx.arc(gx, groundY, 5, 0, Math.PI * 2)
+          ctx.strokeStyle = primary + '40'
+          ctx.lineWidth = 3
+          ctx.stroke()
         }
       }
     }
 
     // Speed vector arrow
     const speedMS = this._speedMS()
-    const arrowLen = Math.max(20, Math.min(100, speedMS * 2.5))
+    const arrowLen = Math.max(24, Math.min(120, speedMS * 2.5))
     const ax = quadX + arrowLen
-    const ay = quadY - 6
+    const ay = quadY - 4
 
     ctx.beginPath()
-    ctx.moveTo(quadX, quadY)
+    ctx.moveTo(quadX + 18, quadY)
     ctx.lineTo(ax, ay)
     ctx.strokeStyle = textColor
     ctx.lineWidth = 2
-    ctx.setLineDash([])
+    ctx.lineCap = 'round'
     ctx.stroke()
 
-    // Arrow head
     ctx.beginPath()
     ctx.moveTo(ax, ay)
-    ctx.lineTo(ax - 8, ay - 4)
-    ctx.lineTo(ax - 8, ay + 4)
+    ctx.lineTo(ax - 7, ay - 4)
+    ctx.lineTo(ax - 7, ay + 4)
     ctx.closePath()
     ctx.fillStyle = textColor
     ctx.fill()
 
-    // Speed label
-    ctx.font = `10px ${fontMono}`
+    ctx.font = `11px ${fontMono}`
     ctx.fillStyle = textColor
-    ctx.fillText(`${this._speed} ${this._unit}`, quadX + 4, quadY - 10)
+    ctx.textBaseline = 'bottom'
+    ctx.fillText(`${this._speed} ${this._unit}`, quadX + 22, quadY - 8)
 
-    // Quad body
-    ctx.fillStyle = textColor
-    ctx.fillRect(quadX - 14, quadY - 5, 28, 10)
+    // Quad body (side profile - rounded rectangle)
+    ctx.beginPath()
+    const bodyW = 32, bodyH = 8
+    const bx = quadX - bodyW / 2, by = quadY - bodyH / 2
+    const br = 3
+    ctx.moveTo(bx + br, by)
+    ctx.lineTo(bx + bodyW - br, by)
+    ctx.quadraticCurveTo(bx + bodyW, by, bx + bodyW, by + br)
+    ctx.lineTo(bx + bodyW, by + bodyH - br)
+    ctx.quadraticCurveTo(bx + bodyW, by + bodyH, bx + bodyW - br, by + bodyH)
+    ctx.lineTo(bx + br, by + bodyH)
+    ctx.quadraticCurveTo(bx, by + bodyH, bx, by + bodyH - br)
+    ctx.lineTo(bx, by + br)
+    ctx.quadraticCurveTo(bx, by, bx + br, by)
+    ctx.closePath()
+    ctx.fillStyle = border
+    ctx.fill()
+    ctx.strokeStyle = textMuted
+    ctx.lineWidth = 1
+    ctx.stroke()
 
-    // Quad props (small circles at each arm tip)
-    ctx.fillStyle = textMuted
-    for (const ox of [-16, 16]) {
-      ctx.beginPath()
-      ctx.arc(quadX + ox, quadY - 5, 4, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    // Tilt label
-    ctx.font = `10px ${fontMono}`
+    // Camera lens indicator (small circle on front)
+    ctx.beginPath()
+    ctx.arc(quadX + bodyW / 2 - 2, quadY, 2.5, 0, Math.PI * 2)
     ctx.fillStyle = primary
-    ctx.fillText(
-      this._i18n.t('tilt.canvas_tilt', { tilt: this._tilt }),
-      quadX + 18,
-      quadY + 16
-    )
+    ctx.fill()
+
+    // Props (wider ellipses at arm tips)
+    for (const ox of [-20, 20]) {
+      ctx.beginPath()
+      ctx.ellipse(quadX + ox, quadY - 4, 8, 2.5, 0, 0, Math.PI * 2)
+      ctx.fillStyle = textMuted + '40'
+      ctx.fill()
+      ctx.strokeStyle = textMuted
+      ctx.lineWidth = 1
+      ctx.stroke()
+    }
 
     ctx.restore()
   }
