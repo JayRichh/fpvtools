@@ -39,15 +39,21 @@ export class FpvSelect extends LitElement {
         color: var(--fpv-text);
         font-family: var(--fpv-font-mono);
         font-size: var(--fpv-font-body);
-        padding: 8px var(--fpv-space-sm);
+        padding: 8px 32px 8px var(--fpv-space-sm);
         min-height: 44px;
         outline: none;
         cursor: pointer;
         transition: border-color 0.15s;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M0 0l6 6 6-6' stroke='%238888a0' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
       }
 
       select:focus {
         border-color: var(--fpv-primary);
+        box-shadow: 0 0 0 2px var(--fpv-focus-ring);
       }
     `,
   ]

@@ -74,6 +74,12 @@ export class TuneDiff extends LitElement {
         gap: var(--fpv-space-md);
         margin-bottom: var(--fpv-space-md);
       }
+
+      @media (max-width: 768px) {
+        .textareas {
+          grid-template-columns: 1fr;
+        }
+      }
       .ta-wrap {
         display: flex;
         flex-direction: column;

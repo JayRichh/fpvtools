@@ -52,11 +52,8 @@ export class TiltCalculator extends LitElement {
         flex: 1;
         font-family: var(--fpv-font-mono);
         font-size: var(--fpv-font-body);
-        color: var(--fpv-primary);
-        background: var(--fpv-surface-2);
-        border: 1px solid var(--fpv-border);
-        border-radius: var(--fpv-radius-sm);
-        padding: 4px var(--fpv-space-sm);
+        color: var(--fpv-text);
+        text-align: right;
       }
       .result-unit {
         font-family: var(--fpv-font-mono);

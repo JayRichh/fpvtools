@@ -63,6 +63,9 @@ export class MotorCalculator extends LitElement {
         color: var(--fpv-text-muted);
         text-transform: uppercase;
         letter-spacing: 0.06em;
+        flex-shrink: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
 
       .result-value {
@@ -70,6 +73,8 @@ export class MotorCalculator extends LitElement {
         font-size: var(--fpv-font-body);
         color: var(--fpv-text);
         text-align: right;
+        flex-shrink: 0;
+        margin-left: var(--fpv-space-sm);
       }
 
       .result-header {

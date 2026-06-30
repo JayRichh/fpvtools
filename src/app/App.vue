@@ -65,7 +65,7 @@ router.afterEach(() => { navOpen.value = false })
   align-items: center;
   gap: var(--fpv-space-md);
   padding: var(--fpv-space-sm) var(--fpv-space-lg);
-  max-width: 1280px;
+  max-width: var(--fpv-max-width);
   margin: 0 auto;
   width: 100%;
   flex-wrap: wrap;
@@ -114,7 +114,7 @@ router.afterEach(() => { navOpen.value = false })
 .main {
   flex: 1;
   padding: var(--fpv-space-lg);
-  max-width: 1280px;
+  max-width: var(--fpv-max-width);
   margin: 0 auto;
   width: 100%;
 }

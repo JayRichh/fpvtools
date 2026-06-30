@@ -43,6 +43,12 @@
   --fpv-radius-md: 8px;
   --fpv-radius-lg: 12px;
 
+  /* Layout */
+  --fpv-max-width: 1400px;
+
+  /* Focus */
+  --fpv-focus-ring: color-mix(in srgb, var(--fpv-primary) 20%, transparent);
+
   /* Typography */
   --fpv-font-body: 14px;
   --fpv-font-label: 12px;

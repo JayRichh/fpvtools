@@ -41,6 +41,7 @@ export class FpvNumber extends LitElement {
 
       .input-wrap:focus-within {
         border-color: var(--fpv-primary);
+        box-shadow: 0 0 0 2px var(--fpv-focus-ring);
       }
 
       input[type='number'] {
@@ -53,11 +54,13 @@ export class FpvNumber extends LitElement {
         font-size: var(--fpv-font-body);
         min-width: 0;
         padding: 0;
+        -moz-appearance: textfield;
       }
 
       input[type='number']::-webkit-inner-spin-button,
       input[type='number']::-webkit-outer-spin-button {
-        opacity: 0.4;
+        -webkit-appearance: none;
+        margin: 0;
       }
 
       .unit {
