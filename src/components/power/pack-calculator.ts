@@ -6,6 +6,7 @@ import { CELL_LIBRARY } from '@core/power/cells'
 import { computePack } from '@core/power/pack'
 import type { PackConfig, FlightModel, PackResult } from '@core/power/types'
 import '../primitives/index.js'
+import './pack-viz.js'
 
 const DEFAULT_CELL_KEY = 'Molicel P42A'
 
@@ -305,6 +306,12 @@ export class PackCalculator extends LitElement {
   }
 
   render() {
+    const p = this._packConfig
+    const r = this._result
+    const dischargePct = r
+      ? Math.min(1, (r.hoverCurrentA / (p.cell.maxContinuousA * p.parallel)))
+      : 0
+
     return html`
       <div class="layout">
         <div class="inputs">
@@ -313,6 +320,13 @@ export class PackCalculator extends LitElement {
           ${this._renderFlightModel()}
         </div>
         <div class="results">
+          <pack-viz
+            style="height:160px"
+            .cellCount=${p.series}
+            .parallelCount=${p.parallel}
+            .voltagePerCell=${p.cell.nominalV}
+            .dischargePct=${dischargePct}
+          ></pack-viz>
           ${this._renderResults()}
         </div>
       </div>

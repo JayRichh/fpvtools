@@ -16,7 +16,10 @@ export default defineConfig({
             tag.startsWith('unit-') ||
             tag.startsWith('tilt-') ||
             tag.startsWith('tune-') ||
-            tag.startsWith('motor-'),
+            tag.startsWith('motor-') ||
+            tag.startsWith('build-') ||
+            tag.startsWith('flight-') ||
+            tag.startsWith('rf-'),
         },
       },
     }),

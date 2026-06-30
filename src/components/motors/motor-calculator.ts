@@ -5,6 +5,7 @@ import { I18nController } from '../primitives/I18nController.js'
 import { computeSizing, MOTOR_LIBRARY, PROP_LIBRARY } from '@core/motors/sizing'
 import type { MotorSpec, PropSpec, SizingResult } from '@core/motors/types'
 import '../primitives/index.js'
+import './motor-gauge.js'
 
 @customElement('motor-calculator')
 export class MotorCalculator extends LitElement {
@@ -105,6 +106,7 @@ export class MotorCalculator extends LitElement {
   @state() private _cellCount = 6
   @state() private _auwG = 1200
   @state() private _motorCount = 4
+  @state() private _escRatedA = 55
 
   // Custom motor fields
   @state() private _customMotorKv = 1300
@@ -157,6 +159,19 @@ export class MotorCalculator extends LitElement {
     if (tw >= 2) return 'success'
     if (tw >= 1.5) return 'warning'
     return 'error'
+  }
+
+  private _sendToFlightTime() {
+    const r = this._result
+    this.dispatchEvent(new CustomEvent('fly-time-export', {
+      detail: {
+        hoverEfficiencyGPerW: r.efficiencyGPerW,
+        totalHoverCurrentA: r.totalHoverCurrentA,
+        auwG: this._auwG,
+      },
+      bubbles: true,
+      composed: true,
+    }))
   }
 
   // ── Render sections ────────────────────────────────────────────────────────
@@ -301,6 +316,15 @@ export class MotorCalculator extends LitElement {
             ]}
             @select-change=${(e: CustomEvent<string>) => (this._motorCount = Number(e.detail))}
           ></fpv-select>
+          <fpv-number
+            label="ESC rated current"
+            .value=${this._escRatedA}
+            min="10"
+            max="120"
+            step="5"
+            unit="A"
+            @value-change=${(e: CustomEvent<number>) => (this._escRatedA = e.detail)}
+          ></fpv-number>
         </div>
       </fpv-card>
     `
@@ -365,6 +389,25 @@ export class MotorCalculator extends LitElement {
     `
   }
 
+  private _renderGauge() {
+    const r = this._result
+    return html`
+      <motor-gauge
+        style="height:150px"
+        .thrustToWeight=${r.thrustToWeight}
+        .motorMaxCurrentA=${this._motor.maxCurrentA}
+        .motorCount=${this._motorCount}
+        .escRatedA=${this._escRatedA}
+      ></motor-gauge>
+      <div style="margin-top:var(--fpv-space-xs)">
+        <button
+          style="background:transparent;border:1px solid color-mix(in srgb,var(--fpv-primary) 40%,transparent);color:var(--fpv-primary);border-radius:var(--fpv-radius-sm);padding:6px 14px;cursor:pointer;font-family:var(--fpv-font-sans);font-size:var(--fpv-font-label);min-height:36px"
+          @click=${this._sendToFlightTime}
+        >→ Flight Time</button>
+      </div>
+    `
+  }
+
   render() {
     return html`
       <div class="layout">
@@ -374,6 +417,7 @@ export class MotorCalculator extends LitElement {
           ${this._renderSetupSection()}
         </div>
         <div class="results">
+          ${this._renderGauge()}
           ${this._renderResults()}
         </div>
       </div>

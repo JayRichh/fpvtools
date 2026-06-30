@@ -3,6 +3,7 @@ import { customElement, state, query } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
 import { I18nController } from '../primitives/I18nController.js'
 import '../primitives/index.js'
+import './tilt-viz.js'
 
 const FOV_DEG = 120
 const ALTITUDE_M = 30
@@ -485,6 +486,11 @@ export class TiltCalculator extends LitElement {
           </div>
         </fpv-card>
         <fpv-card .header=${this._i18n.t('tilt.section_viz')}>
+          <tilt-viz
+            style="height:160px;margin-bottom:var(--fpv-space-sm)"
+            .tiltDeg=${this._tilt}
+            .fovDeg=${FOV_DEG}
+          ></tilt-viz>
           <canvas></canvas>
         </fpv-card>
       </div>

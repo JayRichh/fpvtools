@@ -44,6 +44,8 @@
     "blackbox": "Blackbox",
     "tilt": "Tilt",
     "diff": "Diff",
+    "build": "Build",
+    "flighttime": "Flight Time",
     "prefs_label": "Preferences"
   },
   "prefs": {
@@ -90,7 +92,11 @@
     "diff_title": "Tune Diff — FPV Tools",
     "diff_desc": "Compare two Betaflight CLI dumps side by side. See changed PID, filter, and rate settings at a glance.",
     "blackbox_title": "Blackbox Analyzer — FPV Tools",
-    "blackbox_desc": "Analyze Betaflight blackbox logs. Gyro FFT, step response, and system identification."
+    "blackbox_desc": "Analyze Betaflight blackbox logs. Gyro FFT, step response, and system identification.",
+    "build_title": "Build Planner | FPV Tools",
+    "build_desc": "Plan and track your FPV build. Parts list, store guide, checklist, and firmware links — all in your browser.",
+    "flighttime_title": "Flight Time Calculator | FPV Tools",
+    "flighttime_desc": "Estimate flight time and range for Li-ion and LiPo FPV packs. Visualize discharge curve and reserve."
   },
   "pid": {
     "title": "PID Simulator",

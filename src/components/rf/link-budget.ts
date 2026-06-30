@@ -5,6 +5,7 @@ import { I18nController } from '../primitives/I18nController.js'
 import { computeLinkBudget } from '@core/rf/linkBudget'
 import type { LinkBudgetInput, LinkBudgetResult } from '@core/rf/types'
 import '../primitives/index.js'
+import './rf-range-viz.js'
 
 const DEFAULT_INPUT: LinkBudgetInput = {
   txPowerMw: 100,
@@ -72,10 +73,22 @@ export class LinkBudget extends LitElement {
 
   @state() private _input: LinkBudgetInput = { ...DEFAULT_INPUT }
   @state() private _result: LinkBudgetResult = computeLinkBudget(DEFAULT_INPUT)
+  @state() private _dualLink = false
+  @state() private _secondaryInput: LinkBudgetInput = {
+    txPowerMw: 25, txGainDbi: 2, rxGainDbi: 2, frequencyMhz: 5800, packetRateHz: 50,
+  }
+  @state() private _secondaryResult: LinkBudgetResult = computeLinkBudget({
+    txPowerMw: 25, txGainDbi: 2, rxGainDbi: 2, frequencyMhz: 5800, packetRateHz: 50,
+  })
 
   private _update(partial: Partial<LinkBudgetInput>) {
     this._input = { ...this._input, ...partial }
     this._result = computeLinkBudget(this._input)
+  }
+
+  private _updateSecondary(partial: Partial<LinkBudgetInput>) {
+    this._secondaryInput = { ...this._secondaryInput, ...partial }
+    this._secondaryResult = computeLinkBudget(this._secondaryInput)
   }
 
   render() {
@@ -143,6 +156,37 @@ export class LinkBudget extends LitElement {
             ></fpv-number>
           </div>
         </fpv-card>
+
+        <fpv-card header="Dual Link">
+          <div style="display:flex;align-items:center;gap:var(--fpv-space-sm);min-height:44px">
+            <fpv-toggle
+              label="Show second link (e.g. Walksnail 5.8GHz)"
+              .checked=${this._dualLink}
+              @toggle-change=${(e: CustomEvent<boolean>) => (this._dualLink = e.detail)}
+            ></fpv-toggle>
+          </div>
+          ${this._dualLink ? html`
+            <div class="rows" style="margin-top:var(--fpv-space-sm)">
+              <fpv-number label="Video TX power" .value=${this._secondaryInput.txPowerMw} min="1" max="4000" step="25" unit="mW"
+                @value-change=${(e: CustomEvent<number>) => this._updateSecondary({ txPowerMw: e.detail })}></fpv-number>
+              <fpv-number label="Video TX gain" .value=${this._secondaryInput.txGainDbi} min="-5" max="20" step="0.5" unit="dBi"
+                @value-change=${(e: CustomEvent<number>) => this._updateSecondary({ txGainDbi: e.detail })}></fpv-number>
+              <fpv-number label="Video RX gain" .value=${this._secondaryInput.rxGainDbi} min="-5" max="20" step="0.5" unit="dBi"
+                @value-change=${(e: CustomEvent<number>) => this._updateSecondary({ rxGainDbi: e.detail })}></fpv-number>
+            </div>
+          ` : ''}
+        </fpv-card>
+
+        <rf-range-viz
+          style="height:220px"
+          .primaryRangeKm=${r.theoreticalRangeKm}
+          .primaryMarginDb=${r.linkMarginDb}
+          primaryLabel="Control (ELRS)"
+          .secondaryRangeKm=${this._secondaryResult.theoreticalRangeKm}
+          .secondaryMarginDb=${this._secondaryResult.linkMarginDb}
+          secondaryLabel="Video (5.8G)"
+          .dualLink=${this._dualLink}
+        ></rf-range-viz>
 
         <fpv-card .header=${this._i18n.t('common.results')}>
           <div class="rows">

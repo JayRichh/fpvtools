@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { fpvI18n } from '@core/shared/i18n'
 import { ROUTE_SEO_KEYS } from './seo'
+import { seedIfAbsent, getBuild } from '@core/builds/storage'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -50,6 +51,47 @@ const router = createRouter({
       name: 'diff',
       component: () => import('./views/DiffView.vue'),
     },
+    {
+      path: '/build',
+      name: 'build-gallery',
+      component: () => import('./views/BuildGalleryView.vue'),
+    },
+    {
+      path: '/build/:slug',
+      redirect: (to) => ({ path: `/build/${to.params.slug}/store` }),
+    },
+    {
+      path: '/build/:slug',
+      name: 'build-detail',
+      component: () => import('./views/BuildDetailView.vue'),
+      children: [
+        {
+          path: 'store',
+          name: 'build-store',
+          component: () => import('./views/BuildStoreTab.vue'),
+        },
+        {
+          path: 'items',
+          name: 'build-items',
+          component: () => import('./views/BuildItemsTab.vue'),
+        },
+        {
+          path: 'check',
+          name: 'build-check',
+          component: () => import('./views/BuildChecklistTab.vue'),
+        },
+        {
+          path: 'links',
+          name: 'build-links',
+          component: () => import('./views/BuildLinksTab.vue'),
+        },
+      ],
+    },
+    {
+      path: '/flighttime',
+      name: 'flighttime',
+      component: () => import('./views/FlightTimeView.vue'),
+    },
   ],
 })
 
@@ -84,6 +126,21 @@ fpvI18n.subscribe(() => {
 })
 
 router.beforeEach((to) => {
+  // Dynamic title for build detail routes
+  const slug = to.params.slug as string | undefined
+  if (slug) {
+    seedIfAbsent()
+    const build = getBuild(slug)
+    const buildName = build?.definition.meta.name ?? slug
+    const childName = to.name as string
+    const suffix =
+      childName === 'build-store' ? 'Store Guide' :
+      childName === 'build-items' ? 'Parts List' :
+      childName === 'build-check' ? 'Build Checklist' :
+      childName === 'build-links' ? 'Firmware & Links' : 'Build'
+    document.title = `${buildName} — ${suffix} | FPV Tools`
+    return
+  }
   applyMeta(to.path)
 })
 

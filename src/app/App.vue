@@ -8,10 +8,12 @@
           <router-link to="/power">{{ t('nav.power') }}</router-link>
           <router-link to="/motors">{{ t('nav.motors') }}</router-link>
           <router-link to="/rf">{{ t('nav.rf') }}</router-link>
+          <router-link to="/build">{{ t('nav.build') }}</router-link>
           <router-link to="/convert">{{ t('nav.convert') }}</router-link>
           <router-link to="/blackbox">{{ t('nav.blackbox') }}</router-link>
           <router-link to="/tilt">{{ t('nav.tilt') }}</router-link>
           <router-link to="/diff">{{ t('nav.diff') }}</router-link>
+          <router-link to="/flighttime">{{ t('nav.flighttime') }}</router-link>
         </nav>
         <button
           class="nav-hamburger"
@@ -96,6 +98,12 @@ router.afterEach(() => { navOpen.value = false })
   color: var(--fpv-text-muted);
   transition: color 0.15s ease;
   white-space: nowrap;
+}
+
+@media (max-width: 900px) and (min-width: 769px) {
+  .nav-links a {
+    font-size: 13px;
+  }
 }
 
 .nav-links a:hover,

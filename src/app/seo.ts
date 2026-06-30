@@ -9,4 +9,6 @@ export const ROUTE_SEO_KEYS: Record<string, string> = {
   '/tilt': 'tilt',
   '/diff': 'diff',
   '/blackbox': 'blackbox',
+  '/build': 'build',
+  '/flighttime': 'flighttime',
 }
