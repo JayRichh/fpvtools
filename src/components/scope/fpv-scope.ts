@@ -828,6 +828,38 @@ export class FpvScope extends LitElement {
   // ─── Public API ───────────────────────────────────────────────────────────
 
   /**
+   * Imperatively push new data and draw it in the SAME animation frame.
+   *
+   * The declarative `.series` / `.timeMs` bindings continue to work unchanged
+   * (other consumers rely on them, and they remain the correctness path while a
+   * driver is stopped or on element (re)creation). This is an additive fast-path
+   * for a continuously-running driver (the PID simulator): it assigns the same
+   * reactive properties, then flushes Lit's update synchronously via
+   * `performUpdate()` so the existing `updated()` logic runs now — preserving
+   * per-index legend visibility and setting the cache/dirty flags — and finally
+   * rebuilds the decimation cache and redraws immediately, instead of waiting a
+   * frame for this component's own rAF loop to observe `_dirty`.
+   *
+   * `performUpdate()` also *consumes* the pending reactive update, so the own
+   * rAF loop won't then redundantly redraw the same data next frame.
+   *
+   * Interactions are fully preserved: it reuses the same `_draw()` (which reads
+   * live `_hoverX` / `_zoomStart` / `_zoomEnd` / `_visibility`), and the own rAF
+   * loop still services interaction-only redraws that set `_dirty` between
+   * driver ticks.
+   */
+  renderFrame(series: ScopeSeries[], timeMs: number): void {
+    this.series = series
+    this.timeMs = timeMs
+    this.performUpdate()
+    // Idempotent (cache rebuild is _cacheDirty-gated, draw is pure), so these
+    // are safe even if performUpdate() no-op'd (series reference unchanged).
+    this._rebuildCache()
+    this._draw()
+    this._dirty = false
+  }
+
+  /**
    * Export all currently-visible series as CSV.
    * Uses full-resolution data (not decimated). Series with different lengths
    * are zero-padded with empty cells for shorter ones.

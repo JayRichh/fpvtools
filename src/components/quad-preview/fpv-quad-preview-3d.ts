@@ -145,6 +145,36 @@ export class FpvQuadPreview3d extends LitElement {
     })
   }
 
+  /**
+   * Imperatively push new attitude / motor values and draw them in the SAME
+   * animation frame. Additive fast-path for a continuously-running driver (the
+   * PID simulator): mirrors the declarative property bindings but flushes Lit's
+   * update synchronously via `performUpdate()` (which runs `updated()` → sets
+   * `_dirty`, and consumes the pending update so the own rAF loop won't redraw
+   * this data again next frame), then draws now — removing the one-frame
+   * latency of waiting for the own rAF loop.
+   *
+   * Orbit / reset interactions are preserved: it reuses the same `_draw()`
+   * (which reads `_camPitch` / `_camYaw`), and the own rAF loop still services
+   * interaction-only redraws that set `_dirty` between driver ticks.
+   */
+  renderFrame(props: {
+    motorOutputs: number[]
+    setpointDegS: number
+    gyroDegS: number
+    errorDegS: number
+    saturated: boolean
+  }): void {
+    this.motorOutputs = props.motorOutputs
+    this.setpointDegS = props.setpointDegS
+    this.gyroDegS = props.gyroDegS
+    this.errorDegS = props.errorDegS
+    this.saturated = props.saturated
+    this.performUpdate()
+    this._draw()
+    this._dirty = false
+  }
+
   private _resize() {
     const dpr = window.devicePixelRatio || 1
     const w = this.offsetWidth

@@ -235,7 +235,11 @@ export class PidSimulator extends LitElement {
   @state() private _result: SimResult | null = null
   @state() private _activeTab = 0
   @state() private _running = true
-  @state() private _elapsedMs = 0
+  // Plain (NON-reactive) field. It's written every sim frame, so making it
+  // @state would force a full parent re-render 60×/s. The HUD reads it on
+  // render; _tick explicitly requests an update only when the displayed
+  // tenths-of-a-second label actually changes (~10×/s).
+  private _elapsedMs = 0
 
   // ── Continuous simulation internals ───────────────────────────────────────
   private _rafId = 0
@@ -245,6 +249,11 @@ export class PidSimulator extends LitElement {
   private _fullSamples: SimSample[] = []
   private _windowMs = 2000
   private _metricsTick = 0
+
+  // Cached child ref (unconditionally present) + last-rendered HUD label, used
+  // to drive the viz imperatively and throttle the parent template re-render.
+  private _quadEl: HTMLElementTagNameMap['fpv-quad-preview-3d'] | null = null
+  private _lastHudLabel = ''
 
   // ── Smoothed display values for the 3D quad preview (EMA, see
   //    QUAD_SMOOTH_TAU_MS). These are DISPLAY-ONLY and never feed the scope or
@@ -258,6 +267,9 @@ export class PidSimulator extends LitElement {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   firstUpdated() {
+    // Cache the (unconditionally rendered) quad element so _tick can drive it
+    // imperatively without a per-frame querySelector.
+    this._quadEl = this.renderRoot.querySelector('fpv-quad-preview-3d')
     this._resetSim()
     this._startLoop()
   }
@@ -281,6 +293,8 @@ export class PidSimulator extends LitElement {
     this._qError = 0
     this._qMotor = 0
     this._qSat = 0
+    // Force the HUD label to re-render on the next running frame.
+    this._lastHudLabel = ''
   }
 
   private _startLoop() {
@@ -369,9 +383,44 @@ export class PidSimulator extends LitElement {
         this._result = this._computeMetrics()
       }
 
-      this.requestUpdate()
+      // Drive the scope + quad imperatively in THIS frame (same-frame draw,
+      // eliminating the ~1-frame rAF latency) from the just-updated
+      // _rollingBuf / EMA state above.
+      this._drawViz()
+
+      // Re-render the Lit template (HUD time, tabs, metrics strip, pid-controls
+      // binding check, quad-props) only when the displayed elapsed label
+      // actually changes — ~10×/s instead of every frame. The metrics strip
+      // also rides _result's own @state cadence (~3×/s). This keeps the full
+      // template off the 60fps hot path while keeping the HUD correct.
+      const hudLabel = (this._elapsedMs / 1000).toFixed(1)
+      if (hudLabel !== this._lastHudLabel) {
+        this._lastHudLabel = hudLabel
+        this.requestUpdate()
+      }
+
       this._tick()
     })
+  }
+
+  /**
+   * Push the current sim state to the scope + quad and draw them THIS frame.
+   * Called every tick so the visualisations stay at the full frame rate even
+   * though the parent template is only re-rendered ~10×/s. The declarative
+   * bindings in render() remain the correctness path while stopped / on element
+   * (re)creation, so no viz state is lost across tab switches or Reset.
+   */
+  private _drawViz() {
+    this._quadEl?.renderFrame(this._getQuadProps())
+
+    // The scope element exists only for the response/terms tabs, not metrics.
+    if (this._activeTab === 2) return
+    const scope = this.renderRoot.querySelector('fpv-scope')
+    if (!scope) return
+    const series = this._activeTab === 0
+      ? this._buildResponseSeries()
+      : this._buildTermsSeries()
+    scope.renderFrame(series, this._windowMs)
   }
 
   // ── HUD button handlers ───────────────────────────────────────────────────
