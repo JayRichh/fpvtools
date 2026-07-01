@@ -539,9 +539,15 @@ export class FpvScope extends LitElement {
     const x   = this._hoverX
     const tMs = this._xToTime(x)
 
+    // Resolve a theme-aware foreground so the cursor + tooltip text stay legible
+    // in the light theme too (a hardcoded white was near-invisible on the light
+    // surface-2 background). _theme.frame() was already called this frame.
+    const text = this._theme.get('--fpv-text', '#e0e0e8')
+
     // Vertical cursor line
     ctx.save()
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)'
+    ctx.strokeStyle = text
+    ctx.globalAlpha = 0.5
     ctx.lineWidth = 1
     ctx.setLineDash([4, 4])
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke()
@@ -592,7 +598,7 @@ export class FpvScope extends LitElement {
     ctx.textBaseline = 'top'
     ctx.textAlign    = 'left'
 
-    ctx.fillStyle = 'rgba(255,255,255,0.85)'
+    ctx.fillStyle = text
     ctx.fillText(tLabel, ttX + padX, ttY + padY)
 
     for (let i = 0; i < entries.length; i++) {

@@ -48,11 +48,23 @@ const COLOR_MOTOR    = '#888888'
 const MAX_FULL_SAMPLES = 20000
 
 /**
- * Recompute live metrics ~3×/second (every N frames at 60fps) while the Metrics
- * tab is visible, so rise/overshoot/settling update as gains are tuned instead
- * of only appearing on Stop.
+ * Recompute live metrics ~3×/second (every N frames at 60fps) so the always-
+ * visible metrics strip (and the Metrics tab) update as gains are tuned instead
+ * of only appearing on Stop. Throttled because recompute is O(samples).
  */
 const METRICS_EVERY = 20
+
+/**
+ * Time-constant (ms) for the exponential moving average that smooths the values
+ * driving the 3D quad preview. The control loop carries high-frequency content
+ * (D-term / motor output) so the raw last-sample values jitter frame-to-frame;
+ * the preview is an at-a-glance attitude/activity indicator, not a precise plot,
+ * so its display values are low-passed. ~70ms stays responsive (follows real
+ * attitude changes well under a fifth of a second) while removing the jitter.
+ * NOTE: smoothing is applied ONLY to the quad-preview display path — the scope
+ * series and the computed metrics still use the true, unsmoothed samples.
+ */
+const QUAD_SMOOTH_TAU_MS = 70
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -178,6 +190,40 @@ export class PidSimulator extends LitElement {
         color: var(--fpv-text-muted);
         font-style: italic;
       }
+
+      /* Compact always-visible live metrics strip (independent of active tab) */
+      .metrics-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--fpv-space-md);
+        padding: var(--fpv-space-sm) var(--fpv-space-md);
+        background: var(--fpv-surface-2);
+        border: 1px solid var(--fpv-border);
+        border-radius: var(--fpv-radius-md);
+      }
+
+      .strip-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .strip-label {
+        font-size: var(--fpv-font-label);
+        color: var(--fpv-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+      }
+
+      .strip-value {
+        font-family: var(--fpv-font-mono);
+        font-size: var(--fpv-font-body);
+        color: var(--fpv-text);
+        font-weight: 600;
+        white-space: nowrap;
+      }
     `,
   ]
 
@@ -200,6 +246,15 @@ export class PidSimulator extends LitElement {
   private _windowMs = 2000
   private _metricsTick = 0
 
+  // ── Smoothed display values for the 3D quad preview (EMA, see
+  //    QUAD_SMOOTH_TAU_MS). These are DISPLAY-ONLY and never feed the scope or
+  //    the metrics, which keep showing the true simulated response. ──────────
+  private _qGyro = 0
+  private _qSetpoint = 0
+  private _qError = 0
+  private _qMotor = 0
+  private _qSat = 0
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   firstUpdated() {
@@ -219,6 +274,13 @@ export class PidSimulator extends LitElement {
     this._rollingBuf = []
     this._fullSamples = []
     this._elapsedMs = 0
+    // Reset quad-preview smoothing so the quad snaps level, then eases into the
+    // new response instead of drifting from the previous run's attitude.
+    this._qGyro = 0
+    this._qSetpoint = 0
+    this._qError = 0
+    this._qMotor = 0
+    this._qSat = 0
   }
 
   private _startLoop() {
@@ -277,9 +339,33 @@ export class PidSimulator extends LitElement {
         this._rollingBuf.shift()
       }
 
-      // Live metrics while the Metrics tab is open (throttled — recompute is
-      // O(samples)); lets the user watch metrics change as they tune gains.
-      if (this._activeTab === 2 && this._metricsTick++ % METRICS_EVERY === 0) {
+      // Advance the quad-preview EMA. Take the mean of this frame's new samples
+      // (pre-averages intra-frame high-frequency content) and low-pass across
+      // frames. alpha is derived from the real frame delta so the smoothing
+      // time-constant is frame-rate independent. Display-only — does not touch
+      // the scope data or metrics.
+      if (newSamples.length > 0) {
+        let sumSp = 0, sumGy = 0, sumErr = 0, sumMot = 0, sumSat = 0
+        for (const s of newSamples) {
+          sumSp += s.setpointDegS
+          sumGy += s.gyroDegS
+          sumErr += s.errorDegS
+          sumMot += s.motorOutput
+          sumSat += s.saturated ? 1 : 0
+        }
+        const inv = 1 / newSamples.length
+        const alpha = 1 - Math.exp(-clampedDelta / QUAD_SMOOTH_TAU_MS)
+        this._qSetpoint += (sumSp * inv - this._qSetpoint) * alpha
+        this._qGyro += (sumGy * inv - this._qGyro) * alpha
+        this._qError += (sumErr * inv - this._qError) * alpha
+        this._qMotor += (sumMot * inv - this._qMotor) * alpha
+        this._qSat += (sumSat * inv - this._qSat) * alpha
+      }
+
+      // Live metrics (throttled — recompute is O(samples)). Computed every frame
+      // regardless of the active tab so the always-visible metrics strip stays
+      // live; lets the user watch metrics change as they tune gains.
+      if (this._metricsTick++ % METRICS_EVERY === 0) {
         this._result = this._computeMetrics()
       }
 
@@ -369,26 +455,64 @@ export class PidSimulator extends LitElement {
   // ── Quad preview helpers ──────────────────────────────────────────────────
 
   private _getQuadProps() {
-    const samples = this._rollingBuf
-    if (samples.length === 0) {
-      return { motorOutputs: [0, 0, 0, 0], setpointDegS: 0, gyroDegS: 0, errorDegS: 0, saturated: false }
-    }
-    const last = samples[samples.length - 1]
-    // Normalise motor output to [-1, 1] for display
+    // Pure reader of the smoothed (EMA) display state advanced in _tick. Feeding
+    // temporally-smoothed values keeps the quad, its rotation arcs and its
+    // thrust columns calm and legible instead of vibrating on the raw high-
+    // frequency loop output. The scope + metrics keep the true, unsmoothed data.
     const maxT = this._config.plant.maxTorqueNm || 1
-    const m = Math.max(-1, Math.min(1, last.motorOutput / maxT))
+    // Normalise smoothed motor command to [-1, 1] for display. Kept SIGNED so an
+    // opposite-sign motor pair still reads as the roll/pitch couple that drives
+    // it; smoothing removes the sign-thrashing that made the columns flip.
+    const m = Math.max(-1, Math.min(1, this._qMotor / maxT))
     // Roll convention: left motors (M1, M3) +, right motors (M2, M4) -
     const motorOutputs = [m / 2, -m / 2, m / 2, -m / 2]
     return {
       motorOutputs,
-      setpointDegS: last.setpointDegS,
-      gyroDegS: last.gyroDegS,
-      errorDegS: last.errorDegS,
-      saturated: last.saturated,
+      setpointDegS: this._qSetpoint,
+      gyroDegS: this._qGyro,
+      errorDegS: this._qError,
+      // Hysteresis on the smoothed saturation fraction so the motor colour
+      // doesn't flicker red on brief, isolated saturation samples.
+      saturated: this._qSat > 0.5,
     }
   }
 
   // ── Metrics rendering ─────────────────────────────────────────────────────
+
+  /**
+   * Compact, always-visible live metrics strip (shown regardless of active
+   * tab). Stays live because _tick recomputes _result on the METRICS_EVERY
+   * throttle independent of the active tab. Reuses the pid.metric_* / common.na
+   * i18n keys and token-based styling.
+   */
+  private _renderMetricsStrip() {
+    const m = this._result?.metrics
+    const na = html`<span class="strip-value metric-null">${this._i18n.t('common.na')}</span>`
+    const val = (v: number | null | undefined, unit: string, digits = 1) =>
+      v === null || v === undefined
+        ? na
+        : html`<span class="strip-value">${v.toFixed(digits)} ${unit}</span>`
+    return html`
+      <div class="metrics-strip">
+        <div class="strip-item">
+          <span class="strip-label">${this._i18n.t('pid.metric_rise_time')}</span>
+          ${val(m?.riseTimeMs, 'ms')}
+        </div>
+        <div class="strip-item">
+          <span class="strip-label">${this._i18n.t('pid.metric_overshoot')}</span>
+          ${val(m?.overshootPct, '%')}
+        </div>
+        <div class="strip-item">
+          <span class="strip-label">${this._i18n.t('pid.metric_settling_time')}</span>
+          ${val(m?.settlingTimeMs, 'ms')}
+        </div>
+        <div class="strip-item">
+          <span class="strip-label">${this._i18n.t('pid.metric_oscillation')}</span>
+          ${val(m?.oscillationHz, 'Hz')}
+        </div>
+      </div>
+    `
+  }
 
   private _renderMetrics() {
 
@@ -480,6 +604,8 @@ export class PidSimulator extends LitElement {
         </div>
 
         <div class="viz-col">
+          ${this._renderMetricsStrip()}
+
           <fpv-card>
             <fpv-tabs
               .tabs=${[
