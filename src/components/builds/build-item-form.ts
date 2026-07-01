@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import type { BuildItem, ItemCategory, StockStatus } from '@core/builds/types.js'
 
 const CAT_OPTIONS: ItemCategory[] = ['Airframe', 'Ground Station', 'Power', 'Consumables', 'QOL']
@@ -182,6 +183,8 @@ export class BuildItemForm extends LitElement {
 
   @state() private _item: BuildItem = emptyItem()
 
+  private i18n = new I18nController(this)
+
   connectedCallback() {
     super.connectedCallback()
     this._item = this.initialItem ? { ...this.initialItem, backups: [...this.initialItem.backups] } : emptyItem(this.defaultCat)
@@ -227,43 +230,43 @@ export class BuildItemForm extends LitElement {
     const item = this._item
     return html`
       <div class="form">
-        <div class="form-title">${this.initialItem ? 'Edit Item' : 'Add Item'}</div>
+        <div class="form-title">${this.initialItem ? this.i18n.t('build.form_title_edit_item') : this.i18n.t('build.form_title_add_item')}</div>
 
         <div class="field">
-          <label>Name *</label>
-          <input type="text" .value=${item.name} placeholder="Item name" @input=${(e: Event) => this._set('name', (e.target as HTMLInputElement).value)} />
+          <label>${this.i18n.t('build.label_name_required')}</label>
+          <input type="text" .value=${item.name} placeholder=${this.i18n.t('build.placeholder_item_name')} @input=${(e: Event) => this._set('name', (e.target as HTMLInputElement).value)} />
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label>Category</label>
+            <label>${this.i18n.t('build.label_category')}</label>
             <select .value=${item.cat} @change=${(e: Event) => this._set('cat', (e.target as HTMLSelectElement).value as ItemCategory)}>
               ${CAT_OPTIONS.map(c => html`<option value=${c} ?selected=${item.cat === c}>${c}</option>`)}
             </select>
           </div>
           <div class="field">
-            <label>Price (NZD)</label>
+            <label>${this.i18n.t('build.label_price_nzd')}</label>
             <input type="number" .value=${String(item.price)} min="0" step="0.01" @input=${(e: Event) => this._set('price', parseFloat((e.target as HTMLInputElement).value) || 0)} />
           </div>
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label>Store</label>
-            <input type="text" .value=${item.store} placeholder="Store name" @input=${(e: Event) => this._set('store', (e.target as HTMLInputElement).value)} />
+            <label>${this.i18n.t('build.label_store')}</label>
+            <input type="text" .value=${item.store} placeholder=${this.i18n.t('build.placeholder_store_name')} @input=${(e: Event) => this._set('store', (e.target as HTMLInputElement).value)} />
           </div>
           <div class="field">
-            <label>Buy URL</label>
-            <input type="url" .value=${item.url} placeholder="https://…" @input=${(e: Event) => this._set('url', (e.target as HTMLInputElement).value)} />
+            <label>${this.i18n.t('build.label_buy_url')}</label>
+            <input type="url" .value=${item.url} placeholder=${this.i18n.t('build.placeholder_url')} @input=${(e: Event) => this._set('url', (e.target as HTMLInputElement).value)} />
           </div>
         </div>
 
         <div class="field">
-          <label>Stock</label>
+          <label>${this.i18n.t('build.label_stock')}</label>
           <div class="stock-seg">
             ${(['in', 'check', 'out'] as StockStatus[]).map(s => html`
               <button class=${item.stock === s ? 'active' : ''} @click=${() => this._set('stock', s)}>
-                ${s === 'in' ? 'In Stock' : s === 'check' ? 'Check' : 'Out of Stock'}
+                ${s === 'in' ? this.i18n.t('build.stock_in') : s === 'check' ? this.i18n.t('build.stock_check') : this.i18n.t('build.stock_out')}
               </button>
             `)}
           </div>
@@ -271,38 +274,38 @@ export class BuildItemForm extends LitElement {
 
         <div class="toggle-row">
           <input type="checkbox" id="confirmed" .checked=${item.confirmed} @change=${(e: Event) => this._set('confirmed', (e.target as HTMLInputElement).checked)} />
-          <label for="confirmed">Price confirmed on live product page</label>
+          <label for="confirmed">${this.i18n.t('build.label_price_confirmed')}</label>
         </div>
 
         <div class="toggle-row">
           <input type="checkbox" id="verified" .checked=${item.verified} @change=${(e: Event) => this._set('verified', (e.target as HTMLInputElement).checked)} />
-          <label for="verified">Link verified this session</label>
+          <label for="verified">${this.i18n.t('build.label_link_verified')}</label>
         </div>
 
         <div class="field">
-          <label>Note</label>
+          <label>${this.i18n.t('build.label_note')}</label>
           <textarea .value=${item.note} rows="2" @input=${(e: Event) => this._set('note', (e.target as HTMLTextAreaElement).value)}></textarea>
         </div>
 
         <div class="field">
-          <label>Backup links (max 3)</label>
+          <label>${this.i18n.t('build.label_backup_links')}</label>
           ${item.backups.map((b, i) => html`
             <div class="backup-row">
-              <input type="text" .value=${b.label} placeholder="Label" @input=${(e: Event) => this._setBackup(i, 'label', (e.target as HTMLInputElement).value)} />
-              <input type="url" .value=${b.url} placeholder="https://…" @input=${(e: Event) => this._setBackup(i, 'url', (e.target as HTMLInputElement).value)} />
-              <button class="btn-remove" @click=${() => this._removeBackup(i)} aria-label="Remove backup">×</button>
+              <input type="text" .value=${b.label} placeholder=${this.i18n.t('build.placeholder_backup_label')} @input=${(e: Event) => this._setBackup(i, 'label', (e.target as HTMLInputElement).value)} />
+              <input type="url" .value=${b.url} placeholder=${this.i18n.t('build.placeholder_url')} @input=${(e: Event) => this._setBackup(i, 'url', (e.target as HTMLInputElement).value)} />
+              <button class="btn-remove" @click=${() => this._removeBackup(i)} aria-label=${this.i18n.t('build.aria_remove_backup')}>×</button>
             </div>
           `)}
           ${item.backups.length < 3 ? html`
-            <button class="btn-add-backup" @click=${this._addBackup}>+ Add backup link</button>
+            <button class="btn-add-backup" @click=${this._addBackup}>${this.i18n.t('build.btn_add_backup_link')}</button>
           ` : ''}
         </div>
 
         <div class="form-actions">
           <button class="btn btn-primary" ?disabled=${!item.name.trim()} @click=${this._save}>
-            ${this.initialItem ? 'Save' : 'Add Item'}
+            ${this.initialItem ? this.i18n.t('common.save') : this.i18n.t('build.form_title_add_item')}
           </button>
-          <button class="btn btn-ghost" @click=${this._cancel}>Cancel</button>
+          <button class="btn btn-ghost" @click=${this._cancel}>${this.i18n.t('common.cancel')}</button>
         </div>
       </div>
     `

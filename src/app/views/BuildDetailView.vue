@@ -2,13 +2,13 @@
   <div class="detail">
     <!-- Sticky header -->
     <header class="detail-header">
-      <router-link to="/build" class="back-btn" aria-label="Back to builds">← Builds</router-link>
+      <router-link to="/build" class="back-btn" :aria-label="t('build.aria_back_to_builds')">{{ t('build.btn_back_builds') }}</router-link>
       <div class="detail-title-group">
         <span
           v-if="!editingName"
           class="detail-name"
           @click="startEditName"
-          title="Click to edit"
+          :title="t('build.tooltip_click_to_edit')"
         >{{ build?.definition.meta.name }}</span>
         <input
           v-else
@@ -24,13 +24,13 @@
           class="detail-desc"
           :class="{ placeholder: !build?.definition.meta.description }"
           @click="startEditDesc"
-        >{{ build?.definition.meta.description || 'Add description…' }}</span>
+        >{{ build?.definition.meta.description || t('build.placeholder_add_description') }}</span>
         <input
           v-else
           ref="descInput"
           v-model="editDesc"
           class="detail-desc-input"
-          placeholder="Description"
+          :placeholder="t('build.label_description')"
           @blur="saveDesc"
           @keydown.enter="saveDesc"
           @keydown.esc="cancelEditDesc"
@@ -49,37 +49,37 @@
         ></build-progress>
         <div class="budget-stats">
           <div class="bstat">
-            <span class="bstat-label">Total</span>
+            <span class="bstat-label">{{ t('common.total') }}</span>
             <span class="bstat-value">NZD ${{ total.toFixed(2) }}</span>
           </div>
           <div class="bstat">
-            <span class="bstat-label">Spent</span>
+            <span class="bstat-label">{{ t('build.label_spent') }}</span>
             <span class="bstat-value primary">NZD ${{ spent.toFixed(2) }}</span>
           </div>
           <div class="bstat">
-            <span class="bstat-label">Remaining</span>
+            <span class="bstat-label">{{ t('build.label_remaining') }}</span>
             <span class="bstat-value muted">NZD ${{ (total - spent).toFixed(2) }}</span>
           </div>
         </div>
         <div class="budget-legend">
-          <span class="legend-dot confirmed"></span><span class="legend-label">Price confirmed</span>
-          <span class="legend-dot estimate"></span><span class="legend-label">Estimate</span>
+          <span class="legend-dot confirmed"></span><span class="legend-label">{{ t('build.legend_price_confirmed') }}</span>
+          <span class="legend-dot estimate"></span><span class="legend-label">{{ t('build.legend_price_estimate') }}</span>
         </div>
       </div>
 
       <!-- Tab nav -->
       <nav class="tab-nav">
-        <router-link :to="`/build/${slug}/store`">Store</router-link>
-        <router-link :to="`/build/${slug}/items`">Items</router-link>
-        <router-link :to="`/build/${slug}/check`">Checklist</router-link>
-        <router-link :to="`/build/${slug}/links`">Links</router-link>
+        <router-link :to="`/build/${slug}/store`">{{ t('build.tab_store') }}</router-link>
+        <router-link :to="`/build/${slug}/items`">{{ t('build.tab_items') }}</router-link>
+        <router-link :to="`/build/${slug}/check`">{{ t('build.tab_checklist') }}</router-link>
+        <router-link :to="`/build/${slug}/links`">{{ t('build.tab_links') }}</router-link>
       </nav>
 
       <!-- Tab content -->
       <router-view :build="build" @update="onBuildUpdate" />
     </template>
     <div v-else class="not-found">
-      <p>Build not found. <router-link to="/build">← Back to builds</router-link></p>
+      <p>{{ t('build.error_not_found') }} <router-link to="/build">{{ t('build.link_back_to_builds') }}</router-link></p>
     </div>
   </div>
 </template>
@@ -87,11 +87,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from '@/app/composables/useI18n'
 import { seedIfAbsent, getBuild, saveBuild, buildTotal, buildSpent } from '@core/builds/storage'
 import type { PersistedBuild } from '@core/builds/types'
 import '@components/builds/build-progress.js'
 
 const route = useRoute()
+const { t } = useI18n()
 const slug = computed(() => route.params.slug as string)
 
 const build = ref<PersistedBuild | null>(null)

@@ -1,7 +1,7 @@
 <template>
   <div class="checklist-tab">
     <div class="checklist-toolbar">
-      <button class="btn-ghost btn-sm" @click="resetTicks">Reset ticks</button>
+      <button class="btn-ghost btn-sm" @click="resetTicks">{{ t('build.btn_reset_ticks') }}</button>
     </div>
 
     <div class="checklist-items">
@@ -33,21 +33,21 @@
         </div>
         <div class="check-right">
           <button class="phase-badge" :class="`phase-${item.phase.toLowerCase()}`" @click="cyclePhase(idx)">
-            {{ item.phase }}
+            {{ phaseLabel(item.phase) }}
           </button>
-          <button class="btn-icon" @click="requestDelete(idx)" aria-label="Delete item">×</button>
+          <button class="btn-icon" @click="requestDelete(idx)" :aria-label="t('build.aria_delete_check')">×</button>
         </div>
         <div v-if="deleteConfirm === idx" class="delete-confirm-row">
-          Remove this check?
-          <button class="btn-sm-danger" @click="confirmDelete(idx)">Confirm</button>
-          <button class="btn-sm-ghost" @click="deleteConfirm = -1">Cancel</button>
+          {{ t('build.confirm_delete_check') }}
+          <button class="btn-sm-danger" @click="confirmDelete(idx)">{{ t('common.confirm') }}</button>
+          <button class="btn-sm-ghost" @click="deleteConfirm = -1">{{ t('common.cancel') }}</button>
         </div>
       </div>
     </div>
 
     <!-- Add check -->
     <div v-if="showAddForm" class="add-form">
-      <input v-model="addText" class="add-input" placeholder="Check item text" @keydown.enter="saveAdd" @keydown.esc="cancelAdd" />
+      <input v-model="addText" class="add-input" :placeholder="t('build.placeholder_check_text')" @keydown.enter="saveAdd" @keydown.esc="cancelAdd" />
       <div class="add-phase-sel">
         <button
           v-for="p in phases"
@@ -55,30 +55,34 @@
           class="phase-badge"
           :class="[`phase-${p.toLowerCase()}`, addPhase === p ? 'active' : '']"
           @click="addPhase = p"
-        >{{ p }}</button>
+        >{{ phaseLabel(p) }}</button>
       </div>
       <div class="add-actions">
-        <button class="btn-primary btn-sm" :disabled="!addText.trim()" @click="saveAdd">Add</button>
-        <button class="btn-ghost btn-sm" @click="cancelAdd">Cancel</button>
+        <button class="btn-primary btn-sm" :disabled="!addText.trim()" @click="saveAdd">{{ t('common.add') }}</button>
+        <button class="btn-ghost btn-sm" @click="cancelAdd">{{ t('common.cancel') }}</button>
       </div>
     </div>
-    <button v-else class="btn-add-check" @click="showAddForm = true">+ Add check</button>
+    <button v-else class="btn-add-check" @click="showAddForm = true">{{ t('build.btn_add_check') }}</button>
 
     <!-- NZ legal callout -->
     <div class="legal-note">
-      NZ CAA Part 101: fly below 120m AGL, within visual line of sight, not within 4km of aerodromes without ATC clearance. Ensure remote ID compliance if required.
+      {{ t('build.legal_note_nz') }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
+import { useI18n } from '@/app/composables/useI18n'
 import type { PersistedBuild, ChecklistItem } from '@core/builds/types'
 
 const props = defineProps<{ build: PersistedBuild }>()
 const emit = defineEmits<{ (e: 'update', build: PersistedBuild): void }>()
 
+const { t } = useI18n()
+
 const phases: ChecklistItem['phase'][] = ['Bench', 'Setup', 'Field']
+const phaseLabel = (phase: string) => t(`build.phase_${phase.toLowerCase()}`)
 
 const editingIdx = ref(-1)
 const editText = ref('')

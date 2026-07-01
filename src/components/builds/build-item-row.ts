@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
+import { I18nController } from '../primitives/I18nController.js'
 import type { BuildItem } from '@core/builds/types.js'
 
 @customElement('build-item-row')
@@ -177,6 +178,8 @@ export class BuildItemRow extends LitElement {
   @state() private _noteEdit = ''
   @state() private _deletePending = false
 
+  private i18n = new I18nController(this)
+
   private _dispatch(name: string, detail: unknown) {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }))
   }
@@ -191,9 +194,9 @@ export class BuildItemRow extends LitElement {
   private _requestEdit() { this._dispatch('item-edit', { id: this.item.id }) }
 
   private _stockBadge() {
-    if (this.item.stock === 'in') return html`<span class="badge badge-in">In Stock</span>`
-    if (this.item.stock === 'out') return html`<span class="badge badge-out">Out of Stock</span>`
-    return html`<span class="badge badge-check">Check</span>`
+    if (this.item.stock === 'in') return html`<span class="badge badge-in">${this.i18n.t('build.stock_in')}</span>`
+    if (this.item.stock === 'out') return html`<span class="badge badge-out">${this.i18n.t('build.stock_out')}</span>`
+    return html`<span class="badge badge-check">${this.i18n.t('build.stock_check')}</span>`
   }
 
   private _displayNote() { return this.noteOverride || this.item.note }
@@ -203,15 +206,15 @@ export class BuildItemRow extends LitElement {
     return html`
       <div class="row">
         <div class="check-col">
-          <input type="checkbox" .checked=${this.bought} @change=${this._toggleBought} aria-label="Mark as bought" />
+          <input type="checkbox" .checked=${this.bought} @change=${this._toggleBought} aria-label=${this.i18n.t('build.aria_mark_bought')} />
         </div>
         <div class="info-col">
           <span class="item-name ${this.bought ? 'bought' : ''}">${this.item.name}</span>
           <div class="item-meta">
             <span class="price">NZD $${this.item.price.toFixed(2)}</span>
-            <span class="dot ${this.item.confirmed ? 'dot-confirmed' : 'dot-estimate'}" title="${this.item.confirmed ? 'Price confirmed' : 'Estimated price'}"></span>
+            <span class="dot ${this.item.confirmed ? 'dot-confirmed' : 'dot-estimate'}" title=${this.item.confirmed ? this.i18n.t('build.tooltip_price_confirmed') : this.i18n.t('build.tooltip_price_estimate')}></span>
             ${this._stockBadge()}
-            ${this.item.verified ? html`<span class="badge badge-verified">✓ Verified</span>` : ''}
+            ${this.item.verified ? html`<span class="badge badge-verified">${this.i18n.t('build.badge_verified')}</span>` : ''}
           </div>
 
           ${note && !this._editingNote ? html`<div class="note">${note}</div>` : ''}
@@ -220,27 +223,27 @@ export class BuildItemRow extends LitElement {
             <div class="note-edit-row">
               <textarea .value=${this._noteEdit} @input=${(e: Event) => this._noteEdit = (e.target as HTMLTextAreaElement).value}></textarea>
               <div class="action-row">
-                <button class="btn btn-primary btn-sm-confirm" @click=${this._saveNote}>Save</button>
-                <button class="btn btn-ghost btn-sm-confirm" @click=${this._cancelNote}>Cancel</button>
+                <button class="btn btn-primary btn-sm-confirm" @click=${this._saveNote}>${this.i18n.t('common.save')}</button>
+                <button class="btn btn-ghost btn-sm-confirm" @click=${this._cancelNote}>${this.i18n.t('common.cancel')}</button>
               </div>
             </div>
           ` : ''}
 
           ${!this._editingNote && !this._deletePending ? html`
             <div class="action-row">
-              ${this.item.url ? html`<a class="btn btn-link" href=${this.item.url} target="_blank" rel="noopener noreferrer">Buy at ${this.item.store} →</a>` : ''}
+              ${this.item.url ? html`<a class="btn btn-link" href=${this.item.url} target="_blank" rel="noopener noreferrer">${this.i18n.t('build.link_buy_at', { store: this.item.store })}</a>` : ''}
               ${this.item.backups.map(b => html`<a class="btn btn-link" href=${b.url} target="_blank" rel="noopener noreferrer">${b.label} →</a>`)}
-              <button class="btn btn-ghost" @click=${this._editNote}>Edit note</button>
-              <button class="btn btn-ghost" @click=${this._requestEdit}>Edit item</button>
-              <button class="btn btn-danger" @click=${this._requestDelete}>Delete</button>
+              <button class="btn btn-ghost" @click=${this._editNote}>${this.i18n.t('build.btn_edit_note')}</button>
+              <button class="btn btn-ghost" @click=${this._requestEdit}>${this.i18n.t('build.btn_edit_item')}</button>
+              <button class="btn btn-danger" @click=${this._requestDelete}>${this.i18n.t('common.delete')}</button>
             </div>
           ` : ''}
 
           ${this._deletePending ? html`
             <div class="action-row delete-confirm">
-              <span>Remove from build?</span>
-              <button class="btn btn-danger btn-sm-confirm" @click=${this._confirmDelete}>Confirm</button>
-              <button class="btn btn-ghost btn-sm-confirm" @click=${this._cancelDelete}>Cancel</button>
+              <span>${this.i18n.t('build.confirm_delete_item')}</span>
+              <button class="btn btn-danger btn-sm-confirm" @click=${this._confirmDelete}>${this.i18n.t('common.confirm')}</button>
+              <button class="btn btn-ghost btn-sm-confirm" @click=${this._cancelDelete}>${this.i18n.t('common.cancel')}</button>
             </div>
           ` : ''}
         </div>

@@ -13,7 +13,7 @@
           <span class="store-subtotal">NZD ${{ storeSubtotal(storeName).toFixed(2) }}</span>
           <span class="store-progress">{{ storeBought(storeName) }}/{{ storeItems(storeName).length }}</span>
           <a v-if="storeUrl(storeName)" :href="storeUrl(storeName)" target="_blank" rel="noopener noreferrer" class="store-link">
-            Open {{ storeName }} →
+            {{ t('build.btn_open_store', { store: storeName }) }} →
           </a>
         </div>
       </div>
@@ -47,9 +47,12 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from '@/app/composables/useI18n'
 import type { PersistedBuild, BuildItem } from '@core/builds/types'
 import '@components/builds/build-item-row.js'
 import '@components/builds/build-item-form.js'
+
+const { t } = useI18n()
 
 const props = defineProps<{ build: PersistedBuild }>()
 const emit = defineEmits<{ (e: 'update', build: PersistedBuild): void }>()

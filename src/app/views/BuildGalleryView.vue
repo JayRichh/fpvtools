@@ -1,66 +1,66 @@
 <template>
   <div class="gallery">
     <div class="gallery-header">
-      <h1>Build Planner</h1>
+      <h1>{{ t('build.gallery_title') }}</h1>
       <div class="gallery-actions">
-        <button class="btn-secondary" @click="triggerImport">+ Import JSON</button>
+        <button class="btn-secondary" @click="triggerImport">{{ t('build.btn_import_json') }}</button>
         <input ref="importInput" type="file" accept=".json" style="display:none" @change="onImport" />
-        <button class="btn-primary" @click="showNewForm = !showNewForm">+ New Build</button>
+        <button class="btn-primary" @click="showNewForm = !showNewForm">{{ t('build.btn_new_build') }}</button>
       </div>
     </div>
 
     <!-- New build inline form -->
     <div v-if="showNewForm" class="new-build-form card">
-      <h3>New Build</h3>
+      <h3>{{ t('build.form_title_new') }}</h3>
       <div class="form-row">
-        <label>Name <span class="required">*</span></label>
-        <input v-model="newName" type="text" placeholder="My 5&quot; Freestyle Build" class="input" @keydown.enter="createBuild" @keydown.esc="cancelNew" />
+        <label>{{ t('build.label_name') }} <span class="required">*</span></label>
+        <input v-model="newName" type="text" :placeholder="t('build.placeholder_name')" class="input" @keydown.enter="createBuild" @keydown.esc="cancelNew" />
       </div>
       <div class="form-row">
-        <label>Description</label>
-        <input v-model="newDesc" type="text" placeholder="Optional description" class="input" />
+        <label>{{ t('build.label_description') }}</label>
+        <input v-model="newDesc" type="text" :placeholder="t('build.placeholder_description')" class="input" />
       </div>
       <div class="form-row">
-        <label>Duplicate from</label>
+        <label>{{ t('build.label_duplicate_from') }}</label>
         <select v-model="newDupSlug" class="select">
-          <option value="">— Start empty —</option>
+          <option value="">{{ t('build.option_start_empty') }}</option>
           <option v-for="(b, slug) in builds" :key="slug" :value="slug">{{ b.definition.meta.name }}</option>
         </select>
       </div>
       <div class="form-actions">
-        <button class="btn-primary" :disabled="!newName.trim()" @click="createBuild">Create</button>
-        <button class="btn-ghost" @click="cancelNew">Cancel</button>
+        <button class="btn-primary" :disabled="!newName.trim()" @click="createBuild">{{ t('build.btn_create') }}</button>
+        <button class="btn-ghost" @click="cancelNew">{{ t('common.cancel') }}</button>
       </div>
     </div>
 
     <!-- Build cards -->
     <div v-if="Object.keys(builds).length === 0" class="empty-state">
-      <p>No builds yet. Create one above or import a JSON file.</p>
+      <p>{{ t('build.empty_state') }}</p>
     </div>
     <div class="card-grid">
       <div v-for="(build, slug) in builds" :key="slug" class="build-card card">
         <div class="card-top">
           <div class="card-title-row">
             <span class="card-name">{{ build.definition.meta.name }}</span>
-            <span v-if="slug === SEED_SLUG" class="badge badge-seed">Seeded</span>
+            <span v-if="slug === SEED_SLUG" class="badge badge-seed">{{ t('build.badge_seeded') }}</span>
           </div>
           <p v-if="build.definition.meta.description" class="card-desc">{{ build.definition.meta.description }}</p>
         </div>
         <div class="card-stats">
           <div class="stat">
-            <span class="stat-label">Items</span>
+            <span class="stat-label">{{ t('build.label_items') }}</span>
             <span class="stat-value">{{ build.definition.items.length }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Total</span>
+            <span class="stat-label">{{ t('common.total') }}</span>
             <span class="stat-value mono">NZD ${{ total(build).toFixed(2) }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Spent</span>
+            <span class="stat-label">{{ t('build.label_spent') }}</span>
             <span class="stat-value mono">NZD ${{ spent(build).toFixed(2) }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Remaining</span>
+            <span class="stat-label">{{ t('build.label_remaining') }}</span>
             <span class="stat-value mono">NZD ${{ (total(build) - spent(build)).toFixed(2) }}</span>
           </div>
         </div>
@@ -68,21 +68,21 @@
           <div class="progress-bar" :style="{ width: progressPct(build) + '%' }"></div>
         </div>
         <div class="card-meta">
-          Updated {{ timeAgo(build.definition.meta.updatedAt) }}
+          {{ t('build.label_updated') }} {{ timeAgo(build.definition.meta.updatedAt) }}
         </div>
 
         <!-- Actions or delete confirm -->
         <div v-if="deleteConfirm !== slug" class="card-actions">
-          <router-link :to="`/build/${slug}/store`" class="btn-primary btn-sm">Open</router-link>
-          <button class="btn-secondary btn-sm" @click="duplicate(slug)">Duplicate</button>
-          <button class="btn-secondary btn-sm" @click="exportBuild(slug)">Export</button>
-          <button v-if="slug === SEED_SLUG" class="btn-ghost btn-sm" @click="resetDef(slug)">Reset definition</button>
-          <button class="btn-danger btn-sm" @click="deleteConfirm = slug">Delete</button>
+          <router-link :to="`/build/${slug}/store`" class="btn-primary btn-sm">{{ t('build.btn_open') }}</router-link>
+          <button class="btn-secondary btn-sm" @click="duplicate(slug)">{{ t('build.btn_duplicate') }}</button>
+          <button class="btn-secondary btn-sm" @click="exportBuild(slug)">{{ t('build.btn_export') }}</button>
+          <button v-if="slug === SEED_SLUG" class="btn-ghost btn-sm" @click="resetDef(slug)">{{ t('build.btn_reset_definition') }}</button>
+          <button class="btn-danger btn-sm" @click="deleteConfirm = slug">{{ t('common.delete') }}</button>
         </div>
         <div v-else class="card-actions delete-confirm">
-          <span>Delete this build?</span>
-          <button class="btn-danger btn-sm" @click="confirmDelete(slug)">Confirm</button>
-          <button class="btn-ghost btn-sm" @click="deleteConfirm = ''">Cancel</button>
+          <span>{{ t('build.confirm_delete_build') }}</span>
+          <button class="btn-danger btn-sm" @click="confirmDelete(slug)">{{ t('common.confirm') }}</button>
+          <button class="btn-ghost btn-sm" @click="deleteConfirm = ''">{{ t('common.cancel') }}</button>
         </div>
       </div>
     </div>
@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '@/app/composables/useI18n'
 import {
   seedIfAbsent, loadAllBuilds, saveAllBuilds, buildTotal, buildSpent,
   duplicateBuild, deleteBuild, exportBuild as exportBuildFn, importBuild,
@@ -100,6 +101,7 @@ import {
 import type { PersistedBuild } from '@core/builds/types'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const builds = ref<Record<string, PersistedBuild>>({})
 const showNewForm = ref(false)
@@ -116,18 +118,18 @@ function refresh() { builds.value = loadAllBuilds() }
 function total(b: PersistedBuild) { return buildTotal(b.definition) }
 function spent(b: PersistedBuild) { return buildSpent(b.definition, b.userState) }
 function progressPct(b: PersistedBuild) {
-  const t = total(b)
-  return t > 0 ? Math.min(100, (spent(b) / t) * 100) : 0
+  const tot = total(b)
+  return tot > 0 ? Math.min(100, (spent(b) / tot) * 100) : 0
 }
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts
   const m = Math.floor(diff / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1) return t('build.time_just_now')
+  if (m < 60) return t('build.time_minutes_ago', { n: m })
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
+  if (h < 24) return t('build.time_hours_ago', { n: h })
+  return t('build.time_days_ago', { n: Math.floor(h / 24) })
 }
 
 function createBuild() {
@@ -193,7 +195,7 @@ async function onImport(e: Event) {
     await importBuild(file)
     refresh()
   } catch (err) {
-    alert(`Import failed: ${err}`)
+    alert(t('build.error_import_failed', { message: err }))
   }
 }
 </script>

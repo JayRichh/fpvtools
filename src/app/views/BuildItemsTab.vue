@@ -4,7 +4,7 @@
       <button class="cat-header" @click="toggleCat(cat)">
         <span class="cat-chevron">{{ collapsed[cat] ? '▶' : '▼' }}</span>
         <span class="cat-name">{{ cat }}</span>
-        <span class="cat-meta">{{ catItems(cat).length }} items · NZD ${{ catSubtotal(cat).toFixed(2) }}</span>
+        <span class="cat-meta">{{ catItems(cat).length }} {{ t('build.label_items_meta') }} · NZD ${{ catSubtotal(cat).toFixed(2) }}</span>
       </button>
 
       <div v-if="!collapsed[cat]">
@@ -39,7 +39,7 @@
             @item-cancel="addingCat = null"
           ></build-item-form>
         </div>
-        <button v-else class="btn-add-item" @click="startAdd(cat)">+ Add item</button>
+        <button v-else class="btn-add-item" @click="startAdd(cat)">{{ t('build.btn_add_item') }}</button>
       </div>
     </div>
   </div>
@@ -47,9 +47,12 @@
 
 <script setup lang="ts">
 import { computed, ref, reactive } from 'vue'
+import { useI18n } from '@/app/composables/useI18n'
 import type { PersistedBuild, BuildItem, ItemCategory } from '@core/builds/types'
 import '@components/builds/build-item-row.js'
 import '@components/builds/build-item-form.js'
+
+const { t } = useI18n()
 
 const props = defineProps<{ build: PersistedBuild }>()
 const emit = defineEmits<{ (e: 'update', build: PersistedBuild): void }>()

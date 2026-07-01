@@ -2,75 +2,78 @@
   <div class="links-tab">
     <!-- Firmware card -->
     <div class="links-card">
-      <h3 class="card-title">Firmware</h3>
+      <h3 class="card-title">{{ t('build.section_firmware') }}</h3>
       <div v-for="(link, idx) in build.definition.firmware" :key="idx" class="link-row">
         <template v-if="editingFw !== idx">
           <a :href="link.url" target="_blank" rel="noopener noreferrer" class="link-name">{{ link.name }} →</a>
           <div class="link-actions">
-            <button class="btn-icon-sm" @click="startEditFw(idx)">Edit</button>
+            <button class="btn-icon-sm" @click="startEditFw(idx)">{{ t('build.btn_edit_link') }}</button>
             <button class="btn-icon-sm danger" @click="deleteFwConfirm = idx">×</button>
           </div>
           <div v-if="deleteFwConfirm === idx" class="inline-confirm">
-            Remove? <button class="btn-xs-danger" @click="confirmDeleteFw(idx)">Yes</button>
-            <button class="btn-xs-ghost" @click="deleteFwConfirm = -1">No</button>
+            {{ t('build.confirm_remove_link') }} <button class="btn-xs-danger" @click="confirmDeleteFw(idx)">{{ t('common.yes') }}</button>
+            <button class="btn-xs-ghost" @click="deleteFwConfirm = -1">{{ t('common.no') }}</button>
           </div>
         </template>
         <template v-else>
           <div class="edit-row">
-            <input v-model="fwName" class="edit-input" placeholder="Name" @keydown.esc="editingFw = -1" />
-            <input v-model="fwUrl" class="edit-input" type="url" placeholder="https://…" @keydown.esc="editingFw = -1" />
-            <button class="btn-xs-primary" @click="saveFw(idx)">Save</button>
-            <button class="btn-xs-ghost" @click="editingFw = -1">Cancel</button>
+            <input v-model="fwName" class="edit-input" :placeholder="t('build.label_name')" @keydown.esc="editingFw = -1" />
+            <input v-model="fwUrl" class="edit-input" type="url" :placeholder="t('build.placeholder_url')" @keydown.esc="editingFw = -1" />
+            <button class="btn-xs-primary" @click="saveFw(idx)">{{ t('common.save') }}</button>
+            <button class="btn-xs-ghost" @click="editingFw = -1">{{ t('common.cancel') }}</button>
           </div>
         </template>
       </div>
       <div v-if="addingFw" class="add-row">
-        <input v-model="newFwName" class="edit-input" placeholder="Name" @keydown.esc="cancelAddFw" />
-        <input v-model="newFwUrl" class="edit-input" type="url" placeholder="https://…" @keydown.esc="cancelAddFw" />
-        <button class="btn-xs-primary" :disabled="!newFwName.trim()" @click="saveAddFw">Add</button>
-        <button class="btn-xs-ghost" @click="cancelAddFw">Cancel</button>
+        <input v-model="newFwName" class="edit-input" :placeholder="t('build.label_name')" @keydown.esc="cancelAddFw" />
+        <input v-model="newFwUrl" class="edit-input" type="url" :placeholder="t('build.placeholder_url')" @keydown.esc="cancelAddFw" />
+        <button class="btn-xs-primary" :disabled="!newFwName.trim()" @click="saveAddFw">{{ t('common.add') }}</button>
+        <button class="btn-xs-ghost" @click="cancelAddFw">{{ t('common.cancel') }}</button>
       </div>
-      <button v-else class="btn-add-link" @click="addingFw = true">+ Add firmware link</button>
+      <button v-else class="btn-add-link" @click="addingFw = true">{{ t('build.btn_add_firmware_link') }}</button>
     </div>
 
     <!-- References card -->
     <div class="links-card">
-      <h3 class="card-title">References</h3>
+      <h3 class="card-title">{{ t('build.section_references') }}</h3>
       <div v-for="(link, idx) in build.definition.refs" :key="idx" class="link-row">
         <template v-if="editingRef !== idx">
           <a :href="link.url" target="_blank" rel="noopener noreferrer" class="link-name">{{ link.name }} →</a>
           <div class="link-actions">
-            <button class="btn-icon-sm" @click="startEditRef(idx)">Edit</button>
+            <button class="btn-icon-sm" @click="startEditRef(idx)">{{ t('build.btn_edit_link') }}</button>
             <button class="btn-icon-sm danger" @click="deleteRefConfirm = idx">×</button>
           </div>
           <div v-if="deleteRefConfirm === idx" class="inline-confirm">
-            Remove? <button class="btn-xs-danger" @click="confirmDeleteRef(idx)">Yes</button>
-            <button class="btn-xs-ghost" @click="deleteRefConfirm = -1">No</button>
+            {{ t('build.confirm_remove_link') }} <button class="btn-xs-danger" @click="confirmDeleteRef(idx)">{{ t('common.yes') }}</button>
+            <button class="btn-xs-ghost" @click="deleteRefConfirm = -1">{{ t('common.no') }}</button>
           </div>
         </template>
         <template v-else>
           <div class="edit-row">
-            <input v-model="refName" class="edit-input" placeholder="Name" @keydown.esc="editingRef = -1" />
-            <input v-model="refUrl" class="edit-input" type="url" placeholder="https://…" @keydown.esc="editingRef = -1" />
-            <button class="btn-xs-primary" @click="saveRef(idx)">Save</button>
-            <button class="btn-xs-ghost" @click="editingRef = -1">Cancel</button>
+            <input v-model="refName" class="edit-input" :placeholder="t('build.label_name')" @keydown.esc="editingRef = -1" />
+            <input v-model="refUrl" class="edit-input" type="url" :placeholder="t('build.placeholder_url')" @keydown.esc="editingRef = -1" />
+            <button class="btn-xs-primary" @click="saveRef(idx)">{{ t('common.save') }}</button>
+            <button class="btn-xs-ghost" @click="editingRef = -1">{{ t('common.cancel') }}</button>
           </div>
         </template>
       </div>
       <div v-if="addingRef" class="add-row">
-        <input v-model="newRefName" class="edit-input" placeholder="Name" @keydown.esc="cancelAddRef" />
-        <input v-model="newRefUrl" class="edit-input" type="url" placeholder="https://…" @keydown.esc="cancelAddRef" />
-        <button class="btn-xs-primary" :disabled="!newRefName.trim()" @click="saveAddRef">Add</button>
-        <button class="btn-xs-ghost" @click="cancelAddRef">Cancel</button>
+        <input v-model="newRefName" class="edit-input" :placeholder="t('build.label_name')" @keydown.esc="cancelAddRef" />
+        <input v-model="newRefUrl" class="edit-input" type="url" :placeholder="t('build.placeholder_url')" @keydown.esc="cancelAddRef" />
+        <button class="btn-xs-primary" :disabled="!newRefName.trim()" @click="saveAddRef">{{ t('common.add') }}</button>
+        <button class="btn-xs-ghost" @click="cancelAddRef">{{ t('common.cancel') }}</button>
       </div>
-      <button v-else class="btn-add-link" @click="addingRef = true">+ Add reference</button>
+      <button v-else class="btn-add-link" @click="addingRef = true">{{ t('build.btn_add_reference') }}</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from '@/app/composables/useI18n'
 import type { PersistedBuild } from '@core/builds/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{ build: PersistedBuild }>()
 const emit = defineEmits<{ (e: 'update', build: PersistedBuild): void }>()

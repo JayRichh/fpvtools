@@ -156,44 +156,44 @@ export class FlightTimeCalculator extends LitElement {
         <div class="lower">
         <!-- Controls -->
         <div class="controls">
-          <fpv-card header="Battery">
+          <fpv-card .header=${this._i18n.t('flighttime.section_battery')}>
             <div class="rows">
               <div>
-                <div style="font-size:var(--fpv-font-label);color:var(--fpv-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Chemistry</div>
+                <div style="font-size:var(--fpv-font-label);color:var(--fpv-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">${this._i18n.t('flighttime.label_chemistry')}</div>
                 <div class="chem-seg">
-                  <button class=${inp.chemistry === 'liion' ? 'active' : ''} @click=${() => this._set('chemistry', 'liion')}>Li-ion</button>
-                  <button class=${inp.chemistry === 'lipo' ? 'active' : ''} @click=${() => this._set('chemistry', 'lipo')}>LiPo</button>
+                  <button class=${inp.chemistry === 'liion' ? 'active' : ''} @click=${() => this._set('chemistry', 'liion')}>${this._i18n.t('flighttime.chemistry_liion')}</button>
+                  <button class=${inp.chemistry === 'lipo' ? 'active' : ''} @click=${() => this._set('chemistry', 'lipo')}>${this._i18n.t('flighttime.chemistry_lipo')}</button>
                 </div>
               </div>
-              <fpv-number label="Cell count (S)" .value=${inp.cellCount} min="1" max="14" step="1" unit="S"
+              <fpv-number .label=${this._i18n.t('flighttime.label_cell_count')} .value=${inp.cellCount} min="1" max="14" step="1" unit="S"
                 @value-change=${(e: CustomEvent<number>) => this._set('cellCount', e.detail)}></fpv-number>
-              <fpv-number label="Parallel count (P)" .value=${inp.parallelCount} min="1" max="8" step="1" unit="P"
+              <fpv-number .label=${this._i18n.t('flighttime.label_parallel_count')} .value=${inp.parallelCount} min="1" max="8" step="1" unit="P"
                 @value-change=${(e: CustomEvent<number>) => this._set('parallelCount', e.detail)}></fpv-number>
-              <fpv-number label="Capacity per cell" .value=${inp.capacityPerCellMah} min="100" max="10000" step="100" unit="mAh"
+              <fpv-number .label=${this._i18n.t('flighttime.label_capacity_per_cell')} .value=${inp.capacityPerCellMah} min="100" max="10000" step="100" unit="mAh"
                 @value-change=${(e: CustomEvent<number>) => this._set('capacityPerCellMah', e.detail)}></fpv-number>
-              <fpv-number label="Usable %" .value=${Math.round(inp.usablePct * 100)} min="50" max="100" step="5" unit="%"
+              <fpv-number .label=${this._i18n.t('flighttime.label_usable_pct')} .value=${Math.round(inp.usablePct * 100)} min="50" max="100" step="5" unit="%"
                 @value-change=${(e: CustomEvent<number>) => this._set('usablePct', e.detail / 100)}></fpv-number>
-              <fpv-number label="Reserve %" .value=${Math.round(inp.reservePct * 100)} min="0" max="40" step="5" unit="%"
+              <fpv-number .label=${this._i18n.t('flighttime.label_reserve_pct')} .value=${Math.round(inp.reservePct * 100)} min="0" max="40" step="5" unit="%"
                 @value-change=${(e: CustomEvent<number>) => this._set('reservePct', e.detail / 100)}></fpv-number>
             </div>
           </fpv-card>
 
-          <fpv-card header="Craft">
+          <fpv-card .header=${this._i18n.t('flighttime.section_craft')}>
             <div class="rows">
-              <fpv-number label="AUW" .value=${inp.auwG} min="100" max="10000" step="50" unit="g"
+              <fpv-number .label=${this._i18n.t('common.auw')} .value=${inp.auwG} min="100" max="10000" step="50" unit="g"
                 @value-change=${(e: CustomEvent<number>) => this._set('auwG', e.detail)}></fpv-number>
-              <fpv-number label="Total hover current" .value=${inp.totalHoverCurrentA} min="1" max="200" step="0.5" unit="A"
+              <fpv-number .label=${this._i18n.t('flighttime.label_total_hover_current')} .value=${inp.totalHoverCurrentA} min="1" max="200" step="0.5" unit="A"
                 @value-change=${(e: CustomEvent<number>) => this._set('totalHoverCurrentA', e.detail)}></fpv-number>
-              <fpv-number label="Hover efficiency" .value=${inp.hoverEfficiencyGPerW} min="1" max="20" step="0.1" unit="g/W"
+              <fpv-number .label=${this._i18n.t('flighttime.label_hover_efficiency')} .value=${inp.hoverEfficiencyGPerW} min="1" max="20" step="0.1" unit="g/W"
                 @value-change=${(e: CustomEvent<number>) => this._set('hoverEfficiencyGPerW', e.detail)}></fpv-number>
             </div>
           </fpv-card>
 
-          <fpv-card header="Cruise">
+          <fpv-card .header=${this._i18n.t('flighttime.section_cruise')}>
             <div class="rows">
-              <fpv-number label="Throttle vs hover" .value=${Math.round(inp.cruiseThrottlePct * 100)} min="10" max="150" step="5" unit="%"
+              <fpv-number .label=${this._i18n.t('flighttime.label_cruise_throttle')} .value=${Math.round(inp.cruiseThrottlePct * 100)} min="10" max="150" step="5" unit="%"
                 @value-change=${(e: CustomEvent<number>) => this._set('cruiseThrottlePct', e.detail / 100)}></fpv-number>
-              <fpv-number label="Cruise speed" .value=${inp.cruiseSpeedKmh} min="10" max="300" step="5" unit="km/h"
+              <fpv-number .label=${this._i18n.t('flighttime.label_cruise_speed')} .value=${inp.cruiseSpeedKmh} min="10" max="300" step="5" unit="km/h"
                 @value-change=${(e: CustomEvent<number>) => this._set('cruiseSpeedKmh', e.detail)}></fpv-number>
             </div>
           </fpv-card>
@@ -207,40 +207,40 @@ export class FlightTimeCalculator extends LitElement {
             .cellCount=${inp.cellCount}
           ></flight-time-canvas>
 
-          <fpv-card header="Results">
+          <fpv-card .header=${this._i18n.t('common.results')}>
             <div class="rows">
               ${res ? html`
                 <div class="result-row">
-                  <span class="result-label">Usable capacity</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_usable_capacity')}</span>
                   <span class="result-value">${res.usableCapacityMah.toFixed(0)} mAh</span>
                 </div>
                 <div class="result-row">
-                  <span class="result-label">Hover time</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_hover_time')}</span>
                   <span class="result-value">${res.hoverTimeMin.toFixed(1)} min</span>
                 </div>
                 <div class="result-row">
-                  <span class="result-label">Cruise time</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_cruise_time')}</span>
                   <span class="result-value">${res.cruiseTimeMin.toFixed(1)} min</span>
                 </div>
                 <div class="result-row">
-                  <span class="result-label">Max range</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_max_range')}</span>
                   <span class="result-value">${res.maxRangeKm.toFixed(2)} km</span>
                 </div>
                 <div class="result-row">
-                  <span class="result-label">Hover current</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_hover_current')}</span>
                   <span class="result-value">${res.hoverCurrentA.toFixed(1)} A</span>
                 </div>
                 <div class="result-row">
-                  <span class="result-label">Cruise current</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_cruise_current')}</span>
                   <span class="result-value">${res.cruiseCurrentA.toFixed(1)} A</span>
                 </div>
                 <div class="result-row">
-                  <span class="result-label">C-rate at hover</span>
+                  <span class="result-label">${this._i18n.t('flighttime.result_crate_hover')}</span>
                   <span class="result-value ${this._cDischargeWarn(res.packDischargeC)}">${res.packDischargeC.toFixed(1)}C</span>
                 </div>
                 ${res.packDischargeC > 6 ? html`
                   <div class="warn-msg ${res.packDischargeC > 10 ? 'error' : ''}">
-                    ${res.packDischargeC > 10 ? '⚠ High C-rate — check cell specs for pack integrity.' : '↑ Moderate C-rate — verify cell max discharge rating.'}
+                    ${res.packDischargeC > 10 ? this._i18n.t('flighttime.error_crate_high') : this._i18n.t('flighttime.warn_crate_moderate')}
                   </div>
                 ` : ''}
               ` : ''}

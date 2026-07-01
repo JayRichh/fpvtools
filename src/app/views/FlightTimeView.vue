@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from '@/app/composables/useI18n'
 import '@components/flighttime/flight-time-calculator.js'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -33,8 +36,8 @@ onMounted(() => {
 
 <template>
   <div class="flighttime-view">
-    <h1>Flight Time Calculator</h1>
-    <p class="subtitle">Estimate hover and cruise flight time for your battery pack. Pre-fill from Motor Calculator → Flight Time button.</p>
+    <h1>{{ t('flighttime.title') }}</h1>
+    <p class="subtitle">{{ t('flighttime.subtitle') }}</p>
     <flight-time-calculator ref="calcEl"></flight-time-calculator>
   </div>
 </template>
