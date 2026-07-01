@@ -103,3 +103,106 @@ describe('SimRunner', () => {
     }
   })
 })
+
+describe('SimRunner.updateConfig (live in-place adjust)', () => {
+  // baseConfig's setpoint steps at 100ms, so ticks must pass 100ms for the
+  // controller to actually do anything.
+  it('updateConfig with the same config leaves the trajectory unchanged (no reset)', () => {
+    const a = new SimRunner(baseConfig)
+    a.tick(150)
+    const aNext = a.tick(30)
+
+    const b = new SimRunner(baseConfig)
+    b.tick(150)
+    b.updateConfig(baseConfig)
+    const bNext = b.tick(30)
+
+    expect(bNext.length).toBe(aNext.length)
+    for (let i = 0; i < aNext.length; i++) {
+      expect(bNext[i].motorOutput).toBeCloseTo(aNext[i].motorOutput, 8)
+      expect(bNext[i].gyroDegS).toBeCloseTo(aNext[i].gyroDegS, 8)
+    }
+  })
+
+  it('does not reset elapsed time or step index', () => {
+    const runner = new SimRunner(baseConfig)
+    runner.tick(100)
+    const before = runner.elapsedMs
+    expect(before).toBeGreaterThan(0)
+
+    runner.updateConfig({
+      ...baseConfig,
+      controller: { ...baseConfig.controller, gains: { kp: 0.02, ki: 0.02, kd: 0.001, kff: 0 } },
+    })
+
+    expect(runner.elapsedMs).toBeCloseTo(before, 5)
+    runner.tick(10)
+    expect(runner.elapsedMs).toBeCloseTo(before + 10, 0)
+  })
+
+  it('applies new gains to subsequent output (diverges from unchanged runner)', () => {
+    const a = new SimRunner(baseConfig)
+    a.tick(150)
+    const aNext = a.tick(30)
+
+    const b = new SimRunner(baseConfig)
+    b.tick(150)
+    b.updateConfig({
+      ...baseConfig,
+      controller: { ...baseConfig.controller, gains: { kp: 0.05, ki: 0.05, kd: 0.005, kff: 0 } },
+    })
+    const bNext = b.tick(30)
+
+    let maxDiff = 0
+    for (let i = 0; i < aNext.length; i++) {
+      maxDiff = Math.max(maxDiff, Math.abs(aNext[i].motorOutput - bNext[i].motorOutput))
+    }
+    expect(maxDiff).toBeGreaterThan(0.01)
+  })
+
+  it('preserves integrator state across a gain change (not a fresh restart)', () => {
+    // A runner that keeps running and gets updateConfig'd should NOT match a
+    // fresh runner started with the new gains — because its integrator/plant
+    // state carried over.
+    const newGains = { kp: 0.05, ki: 0.05, kd: 0.005, kff: 0 }
+    const newConfig = {
+      ...baseConfig,
+      controller: { ...baseConfig.controller, gains: newGains },
+    }
+
+    const live = new SimRunner(baseConfig)
+    live.tick(150)
+    live.updateConfig(newConfig)
+    const liveNext = live.tick(50)
+
+    const fresh = new SimRunner(newConfig)
+    fresh.tick(150)
+    const freshNext = fresh.tick(50)
+
+    // Same elapsed time, but different trajectory because live carried its
+    // accumulated state through the swap.
+    let differs = false
+    for (let i = 0; i < liveNext.length; i++) {
+      if (Math.abs(liveNext[i].motorOutput - freshNext[i].motorOutput) > 1e-6) {
+        differs = true
+        break
+      }
+    }
+    expect(differs).toBe(true)
+  })
+
+  it('with a changed loop rate preserves elapsed time and keeps advancing', () => {
+    const runner = new SimRunner(baseConfig) // 4 kHz
+    runner.tick(100)
+    const before = runner.elapsedMs
+
+    runner.updateConfig({
+      ...baseConfig,
+      controller: { ...baseConfig.controller, loopRateHz: 8000 },
+    })
+
+    expect(runner.elapsedMs).toBeCloseTo(before, 0)
+    runner.tick(10)
+    expect(runner.elapsedMs).toBeCloseTo(before + 10, 0)
+  })
+})

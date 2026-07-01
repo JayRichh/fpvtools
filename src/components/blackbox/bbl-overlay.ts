@@ -79,8 +79,6 @@ export class BblOverlay extends LitElement {
 
   /** Pass the BlackboxLog directly as a DOM property from Vue or JS. */
   @property({ attribute: false }) log: BlackboxLog | null = null
-  @property({ type: Boolean }) showFft          = true
-  @property({ type: Boolean }) showStepResponse = false
 
   // ─── Internal state ───────────────────────────────────────────────────────
 

@@ -209,7 +209,7 @@ export class TuneDiff extends LitElement {
     return entries
   }
 
-  private _renderDiffGroups(entries: DiffEntry[], bothSides: boolean) {
+  private _renderDiffGroups(entries: DiffEntry[], bothSides: boolean, total: number) {
     const grouped: Record<Category, DiffEntry[]> = {
       PID: [],
       Filters: [],
@@ -226,8 +226,8 @@ export class TuneDiff extends LitElement {
     return html`
       <div class="summary">
         ${bothSides
-          ? html`Showing <strong>${changedCount}</strong> changed setting${changedCount !== 1 ? 's' : ''} out of ${entries.length + (entries.length - changedCount)} total`
-          : html`Showing <strong>${entries.length}</strong> parsed settings`}
+          ? this._i18n.t('diff.summary_changed', { n: changedCount, total })
+          : this._i18n.t('diff.summary_parsed', { n: entries.length })}
       </div>
       ${CATEGORY_ORDER.map((cat) => {
         const items = grouped[cat]
@@ -294,7 +294,13 @@ export class TuneDiff extends LitElement {
       `
     }
 
-    return this._renderDiffGroups(entries, bothSides)
+    // Total = every distinct setting across both configs (changed + unchanged);
+    // when comparing, `entries` holds only the changed rows.
+    const total = bothSides
+      ? new Set([...Object.keys(parsedA), ...Object.keys(parsedB)]).size
+      : entries.length
+
+    return this._renderDiffGroups(entries, bothSides, total)
   }
 
   render() {

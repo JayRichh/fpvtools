@@ -287,9 +287,12 @@ export class PidSimulator extends LitElement {
   private _onConfigChange(e: CustomEvent<Partial<SimConfig>>) {
     e.stopPropagation()
     this._config = e.detail as SimConfig
-    if (this._running) {
-      this._resetSim()
-      this._startLoop()
+    // Live in-place adjust: while running, apply the new config to the sim
+    // without restarting, so the scope transitions smoothly instead of clearing
+    // on every slider move. While stopped, the current results are left intact
+    // (the change takes effect on Restart).
+    if (this._running && this._runner) {
+      this._runner.updateConfig(this._config)
     }
   }
 
