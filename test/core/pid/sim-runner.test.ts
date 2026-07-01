@@ -191,6 +191,40 @@ describe('SimRunner.updateConfig (live in-place adjust)', () => {
     expect(differs).toBe(true)
   })
 
+  it('treats an equal-but-fresh filter object as unchanged (value comparison, no rebuild)', () => {
+    // Production sends a brand-new config object on every change. A gains-only
+    // change must NOT rebuild the value-identical filter bank, or filter state
+    // would reset and cause a discontinuity. P uses the same filters reference;
+    // Q uses a fresh deep-equal copy — their trajectories must be identical.
+    const newGains = { kp: 0.05, ki: 0.05, kd: 0.005, kff: 0 }
+
+    const p = new SimRunner(baseConfig)
+    p.tick(150)
+    p.updateConfig({
+      ...baseConfig,
+      controller: { ...baseConfig.controller, gains: newGains },
+    })
+    const pNext = p.tick(30)
+
+    const q = new SimRunner(baseConfig)
+    q.tick(150)
+    q.updateConfig({
+      ...baseConfig,
+      controller: {
+        ...baseConfig.controller,
+        gains: newGains,
+        filters: { ...baseConfig.controller.filters },
+      },
+    })
+    const qNext = q.tick(30)
+
+    expect(qNext.length).toBe(pNext.length)
+    for (let i = 0; i < pNext.length; i++) {
+      expect(qNext[i].gyroDegS).toBeCloseTo(pNext[i].gyroDegS, 10)
+      expect(qNext[i].motorOutput).toBeCloseTo(pNext[i].motorOutput, 10)
+    }
+  })
+
   it('with a changed loop rate preserves elapsed time and keeps advancing', () => {
     const runner = new SimRunner(baseConfig) // 4 kHz
     runner.tick(100)
