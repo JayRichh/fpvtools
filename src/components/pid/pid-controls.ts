@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { customElement, property, state } from 'lit/decorators.js'
+import { customElement, property } from 'lit/decorators.js'
 import { tokenStyles } from '../primitives/tokens.css.js'
 import { I18nController } from '../primitives/I18nController.js'
 import { GAIN_PRESETS, PLANT_PRESETS, SCENARIO_PRESETS } from '@core/pid/presets'
@@ -35,33 +35,11 @@ export class PidControls extends LitElement {
         padding-left: var(--fpv-space-md);
         border-left: 2px solid var(--fpv-border);
       }
-
-      .secondary-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--fpv-space-xs);
-        width: 100%;
-        padding: var(--fpv-space-sm);
-        background: var(--fpv-surface-2);
-        border: 1px solid var(--fpv-border);
-        border-radius: var(--fpv-radius-sm);
-        color: var(--fpv-text-muted);
-        font-size: var(--fpv-font-label);
-        cursor: pointer;
-        transition: border-color 0.15s ease, color 0.15s ease;
-      }
-
-      .secondary-toggle:hover {
-        border-color: var(--fpv-primary);
-        color: var(--fpv-text);
-      }
     `,
   ]
 
   private _i18n = new I18nController(this)
 
-  @state() private _secondaryOpen = false
   @property({ type: Object }) config!: SimConfig
 
   // ── helpers ──────────────────────────────────────────────────────────────
@@ -336,17 +314,10 @@ export class PidControls extends LitElement {
         ${this._renderGains()}
         ${this._renderPlant()}
         ${this._renderSetpoint()}
-
-        <button class="secondary-toggle"
-          @click=${() => { this._secondaryOpen = !this._secondaryOpen }}>
-          ${this._i18n.t('common.advanced')} ${this._secondaryOpen ? '▲' : '▼'}
-        </button>
-        ${this._secondaryOpen ? html`
-          ${this._renderFilters()}
-          ${this._renderLoopRate()}
-          ${this._renderOptions()}
-          ${this._renderDisturbance()}
-        ` : ''}
+        ${this._renderFilters()}
+        ${this._renderLoopRate()}
+        ${this._renderOptions()}
+        ${this._renderDisturbance()}
       </div>
     `
   }
