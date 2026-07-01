@@ -27,10 +27,12 @@ const tools = computed(() => [
   { name: t('home.power_name'), path: '/power', description: t('home.power_desc') },
   { name: t('home.motors_name'), path: '/motors', description: t('home.motors_desc') },
   { name: t('home.rf_name'), path: '/rf', description: t('home.rf_desc') },
+  { name: t('home.build_name'), path: '/build', description: t('home.build_desc') },
   { name: t('home.convert_name'), path: '/convert', description: t('home.convert_desc') },
   { name: t('home.blackbox_name'), path: '/blackbox', description: t('home.blackbox_desc') },
   { name: t('home.tilt_name'), path: '/tilt', description: t('home.tilt_desc') },
   { name: t('home.diff_name'), path: '/diff', description: t('home.diff_desc') },
+  { name: t('home.flighttime_name'), path: '/flighttime', description: t('home.flighttime_desc') },
 ])
 </script>
 

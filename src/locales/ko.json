@@ -80,7 +80,11 @@
     "tilt_name": "틸트 계산기",
     "tilt_desc": "카메라 틸트 각도, 시야각, 속도에서의 지평선 오프셋을 계산합니다.",
     "diff_name": "설정 비교",
-    "diff_desc": "Betaflight diff 덤프를 나란히 비교하여 설정 변경 사항을 추적합니다."
+    "diff_desc": "Betaflight diff 덤프를 나란히 비교하여 설정 변경 사항을 추적합니다.",
+    "build_name": "빌드 플래너",
+    "build_desc": "FPV 빌드를 계획하고 추적하세요. 부품 목록, 스토어 가이드, 체크리스트, 펌웨어 링크 — 모두 브라우저에서.",
+    "flighttime_name": "비행 시간 계산기",
+    "flighttime_desc": "Li-ion 및 LiPo 배터리 팩의 호버링 및 순항 비행 시간과 항속 거리를 추정하세요."
   },
   "seo": {
     "home_title": "FPV Tools — FPV 파일럿을 위한 브라우저 기반 계산기",

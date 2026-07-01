@@ -80,7 +80,11 @@
     "tilt_name": "Tilt Calculator",
     "tilt_desc": "Compute camera tilt angle, field of view, and horizon offset at speed.",
     "diff_name": "Diff Viewer",
-    "diff_desc": "Compare Betaflight diff dumps side-by-side to track configuration changes."
+    "diff_desc": "Compare Betaflight diff dumps side-by-side to track configuration changes.",
+    "build_name": "Build Planner",
+    "build_desc": "Plan and track your FPV build — parts list, store guide, checklist, and firmware links.",
+    "flighttime_name": "Flight Time",
+    "flighttime_desc": "Estimate hover and cruise flight time and range for Li-ion and LiPo packs."
   },
   "seo": {
     "home_title": "FPV Tools — Browser-Native Calculators for FPV Pilots",

@@ -80,7 +80,11 @@
     "tilt_name": "Neigungs-Rechner",
     "tilt_desc": "Kameraneigungswinkel, Sichtfeld und Horizontversatz bei Reisegeschwindigkeit berechnen.",
     "diff_name": "Konfig-Vergleich",
-    "diff_desc": "Betaflight-Diff-Dumps nebeneinander vergleichen und Konfigurationsänderungen nachverfolgen."
+    "diff_desc": "Betaflight-Diff-Dumps nebeneinander vergleichen und Konfigurationsänderungen nachverfolgen.",
+    "build_name": "Build-Planer",
+    "build_desc": "Planen und verfolgen Sie Ihren FPV-Build. Teileliste, Shop-Leitfaden, Checkliste und Firmware-Links — alles im Browser.",
+    "flighttime_name": "Flugzeit-Rechner",
+    "flighttime_desc": "Schätzen Sie die Schwebe- und Reiseflugzeit sowie Reichweite für Li-Ion- und LiPo-Akkus."
   },
   "seo": {
     "home_title": "FPV Tools — Browser-native Rechner für FPV-Piloten",

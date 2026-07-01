@@ -80,7 +80,11 @@
     "tilt_name": "Calculadora de Inclinação",
     "tilt_desc": "Calcule o ângulo de inclinação da câmera, campo de visão e deslocamento do horizonte em velocidade.",
     "diff_name": "Comparador de Configurações",
-    "diff_desc": "Compare dumps do Betaflight lado a lado para rastrear alterações de configuração."
+    "diff_desc": "Compare dumps do Betaflight lado a lado para rastrear alterações de configuração.",
+    "build_name": "Planejador de Construção",
+    "build_desc": "Planeje e acompanhe sua construção FPV. Lista de peças, guia de loja, checklist e links de firmware — tudo no seu navegador.",
+    "flighttime_name": "Calculadora de Tempo de Voo",
+    "flighttime_desc": "Estime o tempo de voo em pairado e cruzeiro e alcance para packs de baterias Li-ion e LiPo."
   },
   "seo": {
     "home_title": "FPV Tools — Calculadoras Nativas para Pilotos FPV",

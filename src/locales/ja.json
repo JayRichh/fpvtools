@@ -80,7 +80,11 @@
     "tilt_name": "チルト計算機",
     "tilt_desc": "カメラチルト角、視野角、速度での地平線オフセットを計算。",
     "diff_name": "設定比較",
-    "diff_desc": "BetaflightのDiffダンプを並べて比較し、設定変更を追跡。"
+    "diff_desc": "BetaflightのDiffダンプを並べて比較し、設定変更を追跡。",
+    "build_name": "ビルドプランナー",
+    "build_desc": "FPVビルドの計画と追跡。パーツリスト、ショップガイド、チェックリスト、ファームウェアリンク — すべてブラウザで。",
+    "flighttime_name": "飛行時間計算機",
+    "flighttime_desc": "Li-ionおよびLiPo電池パックのホバーと巡航飛行時間および距離を推定。"
   },
   "seo": {
     "home_title": "FPV Tools — FPVパイロット向けブラウザネイティブ計算機",

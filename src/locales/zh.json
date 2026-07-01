@@ -80,7 +80,11 @@
     "tilt_name": "倾斜计算器",
     "tilt_desc": "计算摄像头倾斜角、视场角和速度下的地平线偏移。",
     "diff_name": "配置对比",
-    "diff_desc": "并排对比Betaflight配置差异，追踪参数变更。"
+    "diff_desc": "并排对比Betaflight配置差异，追踪参数变更。",
+    "build_name": "构建规划器",
+    "build_desc": "规划和追踪您的FPV机型构建。零件清单、购物指南、检查清单和固件链接 — 全在浏览器中。",
+    "flighttime_name": "飞行时间计算器",
+    "flighttime_desc": "估算Li-ion和LiPo电池包的悬停和巡航飞行时间和距离。"
   },
   "seo": {
     "home_title": "FPV Tools — 为FPV飞手打造的浏览器端计算器",
