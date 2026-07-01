@@ -44,6 +44,8 @@
     "blackbox": "블랙박스",
     "tilt": "틸트",
     "diff": "비교",
+    "build": "빌드",
+    "flighttime": "비행 시간",
     "prefs_label": "환경설정"
   },
   "prefs": {
@@ -90,7 +92,11 @@
     "diff_title": "튜닝 비교 — FPV Tools",
     "diff_desc": "두 Betaflight CLI 덤프를 나란히 비교. PID, 필터, 레이트 설정 변경 사항을 한눈에 확인합니다.",
     "blackbox_title": "블랙박스 분석기 — FPV Tools",
-    "blackbox_desc": "Betaflight 블랙박스 로그 분석. 자이로 FFT, 스텝 응답, 시스템 식별."
+    "blackbox_desc": "Betaflight 블랙박스 로그 분석. 자이로 FFT, 스텝 응답, 시스템 식별.",
+    "build_title": "빌드 플래너 | FPV Tools",
+    "build_desc": "FPV 빌드를 계획하고 추적하세요. 부품 목록, 스토어 가이드, 체크리스트, 펌웨어 링크 — 모두 브라우저에서.",
+    "flighttime_title": "비행 시간 계산기 | FPV Tools",
+    "flighttime_desc": "Li-ion 및 LiPo FPV 배터리 팩의 비행 시간과 항속 거리를 추정하세요. 방전 곡선과 여유도를 시각화합니다."
   },
   "pid": {
     "title": "PID 시뮬레이터",
@@ -103,12 +109,12 @@
     "section_options": "옵션",
     "section_presets": "프리셋",
     "section_disturbance": "외란",
-    "label_p_gain": "P Gain",
-    "label_i_gain": "I Gain",
-    "label_d_gain": "D Gain",
-    "label_ff_gain": "FF Gain",
-    "label_gyro_lp": "Gyro LP",
-    "label_dterm_lp": "D-Term LP",
+    "label_p_gain": "P 게인",
+    "label_i_gain": "I 게인",
+    "label_d_gain": "D 게인",
+    "label_ff_gain": "FF 게인",
+    "label_gyro_lp": "자이로 LP",
+    "label_dterm_lp": "D항 LP",
     "label_notch_filter": "노치 필터",
     "label_center": "중심 주파수",
     "label_q": "Q",
@@ -122,8 +128,8 @@
     "label_amplitude": "진폭",
     "label_start": "시작",
     "label_duration": "지속 시간",
-    "label_iterm_relax": "I-Term Relax",
-    "label_anti_windup": "Anti-Windup",
+    "label_iterm_relax": "I항 릴렉스",
+    "label_anti_windup": "안티 윈드업",
     "label_gains_select": "게인",
     "label_scenario": "시나리오",
     "label_torque": "토크",
@@ -318,7 +324,7 @@
     "noise_broadband": "광대역: {rms} °/s RMS",
     "summary_samples": "{n}개 샘플",
     "summary_loop": "{hz} Hz 루프",
-    "summary_steps": "{n, plural, one{# 스텝 이벤트} other{# 스텝 이벤트}}",
+    "summary_steps": "{n} {n, plural, one{스텝 이벤트} other{스텝 이벤트}}",
     "no_steps": "이 로그에서 스텝 이벤트가 감지되지 않았습니다"
   }
 }
