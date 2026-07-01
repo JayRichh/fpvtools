@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { fpvI18n } from '@core/shared/i18n'
 import { ROUTE_SEO_KEYS } from './seo'
 import { seedIfAbsent, getBuild } from '@core/builds/storage'
+import { trackPageview } from './analytics'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -142,6 +143,18 @@ router.beforeEach((to) => {
     return
   }
   applyMeta(to.path)
+})
+
+// Record pageviews for analytics. Kept separate from beforeEach (which
+// early-returns for build-detail routes) so no navigation is missed. The build
+// slug is normalised so user-created build names never reach analytics.
+router.afterEach((to) => {
+  const slug = to.params.slug
+  const path =
+    typeof slug === 'string' && slug
+      ? to.path.replace(`/build/${slug}`, '/build/:slug')
+      : to.path
+  trackPageview(path)
 })
 
 export default router

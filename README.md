@@ -1,6 +1,6 @@
 # FPV Tools
 
-Browser-native calculators and simulators for FPV pilots. No install, no account, no ads.
+Browser-native calculators and simulators for FPV pilots. Free, runs entirely in your browser — no install, no account required.
 
 **[fpvtools.vercel.app](https://fpvtools.vercel.app)**
 
@@ -27,4 +27,8 @@ Browser-native calculators and simulators for FPV pilots. No install, no account
 
 Vue 3 · Lit 3 · TypeScript · Vite · Canvas 2D (3D projection from scratch)
 
-All computation is client-side. No backend, no tracking.
+All computation runs client-side — no backend, no accounts. Anonymous, cookieless
+usage stats via [GoatCounter](https://www.goatcounter.com) (no personal data, no
+cross-site tracking).
+
+**Live stats:** [fpvtools.goatcounter.com](https://fpvtools.goatcounter.com)
