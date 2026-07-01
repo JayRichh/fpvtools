@@ -449,6 +449,11 @@
     "time_just_now": "刚刚",
     "time_minutes_ago": "{n}分钟前",
     "time_hours_ago": "{n}小时前",
-    "time_days_ago": "{n}天前"
+    "time_days_ago": "{n}天前",
+    "title_store": "商店指南",
+    "title_items": "零件清单",
+    "title_check": "构建检查清单",
+    "title_links": "固件和链接",
+    "title_build": "构建"
   }
 }

@@ -135,10 +135,10 @@ router.beforeEach((to) => {
     const buildName = build?.definition.meta.name ?? slug
     const childName = to.name as string
     const suffix =
-      childName === 'build-store' ? 'Store Guide' :
-      childName === 'build-items' ? 'Parts List' :
-      childName === 'build-check' ? 'Build Checklist' :
-      childName === 'build-links' ? 'Firmware & Links' : 'Build'
+      childName === 'build-store' ? fpvI18n.t('build.title_store') :
+      childName === 'build-items' ? fpvI18n.t('build.title_items') :
+      childName === 'build-check' ? fpvI18n.t('build.title_check') :
+      childName === 'build-links' ? fpvI18n.t('build.title_links') : fpvI18n.t('build.title_build')
     document.title = `${buildName} — ${suffix} | FPV Tools`
     return
   }

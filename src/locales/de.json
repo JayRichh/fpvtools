@@ -449,6 +449,11 @@
     "time_just_now": "gerade eben",
     "time_minutes_ago": "vor {n}m",
     "time_hours_ago": "vor {n}h",
-    "time_days_ago": "vor {n}d"
+    "time_days_ago": "vor {n}d",
+    "title_store": "Shop-Leitfaden",
+    "title_items": "Teileliste",
+    "title_check": "Bau-Checkliste",
+    "title_links": "Firmware und Links",
+    "title_build": "Bau"
   }
 }

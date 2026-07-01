@@ -449,6 +449,11 @@
     "time_just_now": "только что",
     "time_minutes_ago": "{n}м назад",
     "time_hours_ago": "{n}ч назад",
-    "time_days_ago": "{n}д назад"
+    "time_days_ago": "{n}д назад",
+    "title_store": "Гайд по магазину",
+    "title_items": "Список деталей",
+    "title_check": "Чек-лист сборки",
+    "title_links": "Прошивка и Ссылки",
+    "title_build": "Сборка"
   }
 }

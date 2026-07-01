@@ -449,6 +449,11 @@
     "time_just_now": "방금 전",
     "time_minutes_ago": "{n}분 전",
     "time_hours_ago": "{n}시간 전",
-    "time_days_ago": "{n}일 전"
+    "time_days_ago": "{n}일 전",
+    "title_store": "스토어 가이드",
+    "title_items": "부품 목록",
+    "title_check": "빌드 체크리스트",
+    "title_links": "펌웨어 및 링크",
+    "title_build": "빌드"
   }
 }

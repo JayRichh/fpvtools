@@ -449,6 +449,11 @@
     "time_just_now": "今",
     "time_minutes_ago": "{n}分前",
     "time_hours_ago": "{n}時間前",
-    "time_days_ago": "{n}日前"
+    "time_days_ago": "{n}日前",
+    "title_store": "ショップガイド",
+    "title_items": "部品リスト",
+    "title_check": "ビルドチェックリスト",
+    "title_links": "ファームウェアとリンク",
+    "title_build": "ビルド"
   }
 }

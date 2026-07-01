@@ -449,6 +449,11 @@
     "time_just_now": "agora mesmo",
     "time_minutes_ago": "há {n}m",
     "time_hours_ago": "há {n}h",
-    "time_days_ago": "há {n}d"
+    "time_days_ago": "há {n}d",
+    "title_store": "Guia de Loja",
+    "title_items": "Lista de Peças",
+    "title_check": "Checklist de Construção",
+    "title_links": "Firmware & Links",
+    "title_build": "Construção"
   }
 }

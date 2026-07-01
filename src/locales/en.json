@@ -449,6 +449,11 @@
     "time_just_now": "just now",
     "time_minutes_ago": "{n}m ago",
     "time_hours_ago": "{n}h ago",
-    "time_days_ago": "{n}d ago"
+    "time_days_ago": "{n}d ago",
+    "title_store": "Store Guide",
+    "title_items": "Parts List",
+    "title_check": "Build Checklist",
+    "title_links": "Firmware & Links",
+    "title_build": "Build"
   }
 }
