@@ -5,10 +5,8 @@ import { I18nController } from '../primitives/I18nController.js'
 import '../primitives/index.js'
 import './tilt-viz.js'
 
-const FOV_DEG = 120
-const ALTITUDE_M = 30
 const G = 9.81
-const DRAG_K = 0.3
+const RHO = 1.225 // air density kg/m³ at sea level
 
 @customElement('tilt-calculator')
 export class TiltCalculator extends LitElement {
@@ -67,27 +65,38 @@ export class TiltCalculator extends LitElement {
   @state() private _tilt = 30
   @state() private _speed = 20
   @state() private _unit = 'm/s'
+  @state() private _fovDeg = 120
+  @state() private _altitudeM = 30
+  @state() private _auwG = 650
+  @state() private _cdaCm2 = 300 // drag area Cd·A
 
   private _speedMS(): number {
     return this._unit === 'mph' ? this._speed * 0.44704 : this._speed
   }
 
   private _horizonPct(): number {
-    return 50 + (this._tilt / (FOV_DEG / 2)) * 50
+    return 50 + (this._tilt / (this._fovDeg / 2)) * 50
   }
 
   private _groundDist(): number {
     const tiltRad = (this._tilt * Math.PI) / 180
-    const fovHalfRad = ((FOV_DEG / 2) * Math.PI) / 180
+    const fovHalfRad = ((this._fovDeg / 2) * Math.PI) / 180
     const angle = tiltRad + fovHalfRad
     if (angle >= Math.PI / 2) return Infinity
-    return ALTITUDE_M * Math.tan(angle)
+    return this._altitudeM * Math.tan(angle)
+  }
+
+  // Steady level flight: tan(tilt) = drag / weight, with quadratic drag
+  // D = ½·ρ·CdA·v². AoA is the prop-disk angle to the (horizontal) airflow.
+  private _equilibriumTiltDeg(): number {
+    const v = this._speedMS()
+    const massKg = this._auwG / 1000
+    const dragN = 0.5 * RHO * (this._cdaCm2 / 10000) * v * v
+    return (Math.atan(dragN / (massKg * G)) * 180) / Math.PI
   }
 
   private _aoa(): number {
-    const speedMS = this._speedMS()
-    if (speedMS < 0.01) return 90
-    return (Math.atan(G / (speedMS * DRAG_K)) * 180) / Math.PI
+    return 90 - this._equilibriumTiltDeg()
   }
 
   private _fmt(n: number, digits = 1): string {
@@ -99,13 +108,14 @@ export class TiltCalculator extends LitElement {
     const horizPct  = this._horizonPct()
     const groundDist = this._groundDist()
     const aoa        = this._aoa()
+    const eqTilt     = this._equilibriumTiltDeg()
 
     return html`
       <div class="layout">
         <tilt-viz
           style="height:clamp(320px,48vh,520px)"
           .tiltDeg=${this._tilt}
-          .fovDeg=${FOV_DEG}
+          .fovDeg=${this._fovDeg}
         ></tilt-viz>
 
         <fpv-card .header=${this._i18n.t('common.inputs')}>
@@ -129,6 +139,30 @@ export class TiltCalculator extends LitElement {
                 @select-change=${(e: CustomEvent<string>) => { this._unit = e.detail }}
               ></fpv-select>
             </div>
+            <fpv-number
+              label="Camera FOV"
+              .value=${this._fovDeg}
+              min="60" max="180" step="5" unit="°"
+              @value-change=${(e: CustomEvent<number>) => { this._fovDeg = e.detail }}
+            ></fpv-number>
+            <fpv-number
+              label="Altitude"
+              .value=${this._altitudeM}
+              min="1" max="500" step="5" unit="m"
+              @value-change=${(e: CustomEvent<number>) => { this._altitudeM = e.detail }}
+            ></fpv-number>
+            <fpv-number
+              .label=${this._i18n.t('common.auw')}
+              .value=${this._auwG}
+              min="50" max="10000" step="50" unit="g"
+              @value-change=${(e: CustomEvent<number>) => { this._auwG = e.detail }}
+            ></fpv-number>
+            <fpv-number
+              label="Drag area Cd·A"
+              .value=${this._cdaCm2}
+              min="20" max="2000" step="10" unit="cm²"
+              @value-change=${(e: CustomEvent<number>) => { this._cdaCm2 = e.detail }}
+            ></fpv-number>
           </div>
         </fpv-card>
 
@@ -147,6 +181,11 @@ export class TiltCalculator extends LitElement {
             <div class="result-row">
               <span class="result-label">${this._i18n.t('tilt.label_aoa')}</span>
               <span class="result-value">${this._fmt(aoa)}</span>
+              <span class="result-unit">°</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Tilt to hold speed</span>
+              <span class="result-value">${this._fmt(eqTilt)}</span>
               <span class="result-unit">°</span>
             </div>
           </div>

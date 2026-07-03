@@ -13,6 +13,10 @@ const DEFAULT_INPUT: LinkBudgetInput = {
   rxGainDbi: 2,
   frequencyMhz: 2400,
   packetRateHz: 50,
+  distanceKm: 1,
+  cableLossDb: 0.5,
+  connectorLossDb: 0.5,
+  targetMarginDb: 12,
 }
 
 @customElement('link-budget')
@@ -149,10 +153,46 @@ export class LinkBudget extends LitElement {
               .label=${this._i18n.t('rf.label_packet_rate')}
               .value=${this._input.packetRateHz}
               min="25"
-              max="500"
+              max="1000"
               step="25"
               unit="Hz"
               @value-change=${(e: CustomEvent<number>) => this._update({ packetRateHz: e.detail })}
+            ></fpv-number>
+            <fpv-number
+              label="Flight distance"
+              .value=${this._input.distanceKm ?? 1}
+              min="0.1"
+              max="100"
+              step="0.1"
+              unit="km"
+              @value-change=${(e: CustomEvent<number>) => this._update({ distanceKm: e.detail })}
+            ></fpv-number>
+            <fpv-number
+              label="Cable loss"
+              .value=${this._input.cableLossDb ?? 0}
+              min="0"
+              max="10"
+              step="0.1"
+              unit="dB"
+              @value-change=${(e: CustomEvent<number>) => this._update({ cableLossDb: e.detail })}
+            ></fpv-number>
+            <fpv-number
+              label="Connector loss"
+              .value=${this._input.connectorLossDb ?? 0}
+              min="0"
+              max="6"
+              step="0.1"
+              unit="dB"
+              @value-change=${(e: CustomEvent<number>) => this._update({ connectorLossDb: e.detail })}
+            ></fpv-number>
+            <fpv-number
+              label="Target fade margin"
+              .value=${this._input.targetMarginDb ?? 0}
+              min="0"
+              max="40"
+              step="1"
+              unit="dB"
+              @value-change=${(e: CustomEvent<number>) => this._update({ targetMarginDb: e.detail })}
             ></fpv-number>
           </div>
         </fpv-card>
@@ -199,12 +239,20 @@ export class LinkBudget extends LitElement {
               <span class="result-value">${r.sensitivityDbm.toFixed(1)} dBm</span>
             </div>
             <div class="result-row">
-              <span class="result-label">${this._i18n.t('rf.label_path_loss')}</span>
+              <span class="result-label">${this._i18n.t('rf.label_path_loss')} @ ${(this._input.distanceKm ?? 1).toFixed(1)} km</span>
               <span class="result-value">${r.pathLossDb.toFixed(1)} dB</span>
             </div>
             <div class="result-row">
-              <span class="result-label">${this._i18n.t('rf.label_link_margin')}</span>
-              <span class="result-value">${r.linkMarginDb.toFixed(1)} dB</span>
+              <span class="result-label">${this._i18n.t('rf.label_link_margin')} @ ${(this._input.distanceKm ?? 1).toFixed(1)} km</span>
+              <span class="result-value" style=${r.linkMarginDb < (this._input.targetMarginDb ?? 0) ? 'color:var(--fpv-error)' : ''}>${r.linkMarginDb.toFixed(1)} dB</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Fresnel radius (midpoint)</span>
+              <span class="result-value">${r.fresnelRadiusM.toFixed(1)} m</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Usable range (with margin)</span>
+              <span class="result-value highlight">${r.usableRangeKm.toFixed(2)} km</span>
             </div>
             <div class="result-row">
               <span class="result-label">${this._i18n.t('rf.label_theoretical_range')}</span>

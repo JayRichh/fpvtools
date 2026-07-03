@@ -18,6 +18,8 @@ export interface SizingConfig {
   cellCount: number
   auwG: number
   motorCount: number
+  /** Nominal cell voltage; 3.7 (LiPo) if omitted, use 3.6 for Li-ion */
+  cellNominalV?: number
 }
 
 export interface SizingResult {

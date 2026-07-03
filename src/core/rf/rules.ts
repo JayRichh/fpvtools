@@ -5,7 +5,7 @@ interface VtxRule { band: string; maxPowerMw: number; note: string }
 
 const RULES: Record<string, VtxRule[]> = {
   'USA (FCC)': [
-    { band: '5.8', maxPowerMw: 1000, note: 'FCC Part 87 — 1W max EIRP on 5.8GHz for amateur radio' },
+    { band: '5.8', maxPowerMw: 1000, note: 'FCC Part 97 (amateur radio, licence required above 25mW Part 15 levels) — 1W typical max on 5.8GHz' },
     { band: '2.4', maxPowerMw: 1000, note: 'FCC Part 15 — 1W max' },
     { band: '915', maxPowerMw: 1000, note: 'FCC Part 15 — 1W max ISM band' },
   ],

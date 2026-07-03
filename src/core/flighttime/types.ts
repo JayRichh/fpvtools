@@ -5,7 +5,6 @@ export interface FlightTimeInput {
   capacityPerCellMah: number
   usablePct: number
   hoverEfficiencyGPerW: number
-  totalHoverCurrentA: number
   auwG: number
   cruiseThrottlePct: number
   cruiseSpeedKmh: number

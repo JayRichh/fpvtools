@@ -125,8 +125,8 @@ export class FlightTimeCalculator extends LitElement {
   }
 
   // Called externally by FlightTimeView to pre-fill from motor calc
-  setFromMotors(hoverEfficiencyGPerW: number, totalHoverCurrentA: number, auwG: number) {
-    this._input = { ...this._input, hoverEfficiencyGPerW, totalHoverCurrentA, auwG }
+  setFromMotors(hoverEfficiencyGPerW: number, auwG: number) {
+    this._input = { ...this._input, hoverEfficiencyGPerW, auwG }
     this._result = this._computed
   }
 
@@ -182,8 +182,6 @@ export class FlightTimeCalculator extends LitElement {
             <div class="rows">
               <fpv-number .label=${this._i18n.t('common.auw')} .value=${inp.auwG} min="100" max="10000" step="50" unit="g"
                 @value-change=${(e: CustomEvent<number>) => this._set('auwG', e.detail)}></fpv-number>
-              <fpv-number .label=${this._i18n.t('flighttime.label_total_hover_current')} .value=${inp.totalHoverCurrentA} min="1" max="200" step="0.5" unit="A"
-                @value-change=${(e: CustomEvent<number>) => this._set('totalHoverCurrentA', e.detail)}></fpv-number>
               <fpv-number .label=${this._i18n.t('flighttime.label_hover_efficiency')} .value=${inp.hoverEfficiencyGPerW} min="1" max="20" step="0.1" unit="g/W"
                 @value-change=${(e: CustomEvent<number>) => this._set('hoverEfficiencyGPerW', e.detail)}></fpv-number>
             </div>

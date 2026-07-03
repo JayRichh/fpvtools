@@ -166,7 +166,6 @@ export class MotorCalculator extends LitElement {
     this.dispatchEvent(new CustomEvent('fly-time-export', {
       detail: {
         hoverEfficiencyGPerW: r.efficiencyGPerW,
-        totalHoverCurrentA: r.totalHoverCurrentA,
         auwG: this._auwG,
       },
       bubbles: true,

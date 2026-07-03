@@ -7,7 +7,7 @@ const { t } = useI18n()
 const router = useRouter()
 
 function onFlyTimeExport(e: Event) {
-  const detail = (e as CustomEvent<{ hoverEfficiencyGPerW: number; totalHoverCurrentA: number; auwG: number }>).detail
+  const detail = (e as CustomEvent<{ hoverEfficiencyGPerW: number; auwG: number }>).detail
   const encoded = btoa(JSON.stringify(detail))
   router.push({ path: '/flighttime', query: { s: encoded } })
 }

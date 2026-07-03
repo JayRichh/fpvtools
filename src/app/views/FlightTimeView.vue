@@ -16,14 +16,12 @@ onMounted(() => {
     try {
       const data = JSON.parse(atob(s)) as {
         hoverEfficiencyGPerW?: number
-        totalHoverCurrentA?: number
         auwG?: number
       }
       const el = calcEl.value as any
       if (typeof el.setFromMotors === 'function') {
         el.setFromMotors(
           data.hoverEfficiencyGPerW ?? 5.5,
-          data.totalHoverCurrentA ?? 18,
           data.auwG ?? 1200,
         )
       }

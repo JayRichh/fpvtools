@@ -67,4 +67,39 @@ describe('computeLinkBudget', () => {
     expect(result.theoreticalRangeKm).toBeGreaterThan(0)
     expect(isFinite(result.theoreticalRangeKm)).toBe(true)
   })
+
+  it('link margin is evaluated at the user distance, not pinned to 1 km', () => {
+    const near = computeLinkBudget({ ...baseInput, distanceKm: 1 })
+    const far = computeLinkBudget({ ...baseInput, distanceKm: 10 })
+    expect(far.linkMarginDb).toBeLessThan(near.linkMarginDb)
+    // FSPL doubles distance → +6 dB: 10× distance → +20 dB
+    expect(near.linkMarginDb - far.linkMarginDb).toBeCloseTo(20, 1)
+  })
+
+  it('cable and connector losses reduce margin and range', () => {
+    const lossless = computeLinkBudget(baseInput)
+    const lossy = computeLinkBudget({ ...baseInput, cableLossDb: 2, connectorLossDb: 1 })
+    expect(lossy.linkMarginDb).toBeCloseTo(lossless.linkMarginDb - 3, 5)
+    expect(lossy.theoreticalRangeKm).toBeLessThan(lossless.theoreticalRangeKm)
+  })
+
+  it('usable range with a fade margin target is shorter than theoretical', () => {
+    const r = computeLinkBudget({ ...baseInput, targetMarginDb: 12 })
+    expect(r.usableRangeKm).toBeLessThan(r.theoreticalRangeKm)
+    // 12 dB target → range factor 10^(−12/20) ≈ 0.251
+    expect(r.usableRangeKm / r.theoreticalRangeKm).toBeCloseTo(Math.pow(10, -12 / 20), 3)
+  })
+
+  it('Fresnel radius: r = 8.657·√(d_km/f_GHz)', () => {
+    const r = computeLinkBudget({ ...baseInput, distanceKm: 4, frequencyMhz: 2400 })
+    expect(r.fresnelRadiusM).toBeCloseTo(8.657 * Math.sqrt(4 / 2.4), 3)
+  })
+
+  it('defaults keep prior behavior (distance 1 km, no losses)', () => {
+    const r = computeLinkBudget(baseInput)
+    const explicit = computeLinkBudget({ ...baseInput, distanceKm: 1, cableLossDb: 0, connectorLossDb: 0, targetMarginDb: 0 })
+    expect(r.pathLossDb).toBeCloseTo(explicit.pathLossDb, 6)
+    expect(r.linkMarginDb).toBeCloseTo(explicit.linkMarginDb, 6)
+    expect(r.usableRangeKm).toBeCloseTo(r.theoreticalRangeKm, 6)
+  })
 })

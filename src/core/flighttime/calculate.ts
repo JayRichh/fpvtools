@@ -1,17 +1,25 @@
 import type { FlightTimeInput, FlightTimeResult } from './types.js'
 
+export function cellNominalV(chemistry: 'lipo' | 'liion'): number {
+  return chemistry === 'lipo' ? 3.7 : 3.6
+}
+
 export function computeFlightTime(input: FlightTimeInput): FlightTimeResult {
   const {
-    cellCount, parallelCount, capacityPerCellMah, usablePct,
-    totalHoverCurrentA, auwG, cruiseThrottlePct, cruiseSpeedKmh, reservePct,
+    chemistry, cellCount, parallelCount, capacityPerCellMah, usablePct,
+    hoverEfficiencyGPerW, auwG, cruiseThrottlePct, cruiseSpeedKmh, reservePct,
   } = input
 
   const totalCapacityMah = capacityPerCellMah * parallelCount
   const reserveCapacityMah = totalCapacityMah * reservePct
   const usableCapacityMah = totalCapacityMah * usablePct - reserveCapacityMah
 
-  const hoverCurrentA = totalHoverCurrentA
-  // Cruise current scales as throttle^1.5 relative to hover current
+  // Hover current derived from AUW × efficiency (same physics chain as power/pack):
+  // hover power [W] = AUW [g] / efficiency [g/W]; current = power / pack voltage
+  const nominalV = cellCount * cellNominalV(chemistry)
+  const hoverPowerW = auwG / hoverEfficiencyGPerW
+  const hoverCurrentA = hoverPowerW / nominalV
+  // Cruise current scales as throttle^1.5 relative to hover current (estimate)
   const cruiseCurrentA = hoverCurrentA * Math.pow(cruiseThrottlePct, 1.5)
 
   const hoverTimeMin = usableCapacityMah / (hoverCurrentA * 1000 / 60)
@@ -39,7 +47,6 @@ export const FLIGHTTIME_DEFAULTS: FlightTimeInput = {
   capacityPerCellMah: 4200,
   usablePct: 0.8,
   hoverEfficiencyGPerW: 5.5,
-  totalHoverCurrentA: 18,
   auwG: 1200,
   cruiseThrottlePct: 0.5,
   cruiseSpeedKmh: 60,
