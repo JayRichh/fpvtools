@@ -12,6 +12,4 @@ const { t } = useI18n()
   </div>
 </template>
 <style scoped>
-.tilt-view { max-width: 860px; margin: 0 auto; }
-.subtitle { color: var(--fpv-text-muted); margin-bottom: var(--fpv-space-lg); font-size: var(--fpv-font-label); }
 </style>

@@ -6,3 +6,20 @@
   display: flex;
   flex-direction: column;
 }
+
+/* Unified tool-page header: one type scale + subtitle style for every view
+   (previously duplicated per view with drift) */
+.main h1 {
+  font-family: var(--fpv-font-sans);
+  font-size: var(--fpv-font-h1);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--fpv-text);
+  margin-bottom: var(--fpv-space-xs);
+}
+
+.main .subtitle {
+  color: var(--fpv-text-muted);
+  margin-bottom: var(--fpv-space-lg);
+  font-size: var(--fpv-font-label);
+}

@@ -158,10 +158,6 @@ function onBuildUpdate(updated: PersistedBuild) {
 </script>
 
 <style scoped>
-.detail {
-  max-width: 1400px;
-  margin: 0 auto;
-}
 
 .detail-header {
   position: sticky;

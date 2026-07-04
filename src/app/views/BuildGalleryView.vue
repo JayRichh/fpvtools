@@ -201,10 +201,6 @@ async function onImport(e: Event) {
 </script>
 
 <style scoped>
-.gallery {
-  max-width: 1400px;
-  margin: 0 auto;
-}
 
 .gallery-header {
   display: flex;

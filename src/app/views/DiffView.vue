@@ -12,6 +12,4 @@ const { t } = useI18n()
   </div>
 </template>
 <style scoped>
-.diff-view { }
-.subtitle { color: var(--fpv-text-muted); margin-bottom: var(--fpv-space-lg); font-size: var(--fpv-font-label); }
 </style>

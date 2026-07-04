@@ -46,8 +46,8 @@
   --fpv-radius-md: 8px;
   --fpv-radius-lg: 12px;
 
-  /* Layout */
-  --fpv-max-width: 1400px;
+  /* Layout — full-bleed viewport: pages use the whole width (ultrawide) */
+  --fpv-max-width: 100%;
 
   /* Focus */
   --fpv-focus-ring: color-mix(in srgb, var(--fpv-primary) 20%, transparent);
@@ -61,6 +61,7 @@
   --fpv-font-label: 12px;
   --fpv-font-body: 14px;
   --fpv-font-lg: 16px;
+  --fpv-font-h1: 22px;
   --fpv-font-mono: 'JetBrains Mono', monospace;
   --fpv-font-sans: 'Inter', system-ui, sans-serif;
 }

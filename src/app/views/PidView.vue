@@ -14,6 +14,4 @@ const { t } = useI18n()
 </template>
 
 <style scoped>
-.pid-view { max-width: 1400px; margin: 0 auto; }
-.subtitle { color: var(--fpv-text-muted); margin-bottom: var(--fpv-space-lg); font-size: var(--fpv-font-label); }
 </style>
