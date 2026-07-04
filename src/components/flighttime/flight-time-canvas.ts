@@ -1,114 +1,39 @@
-import { LitElement, html, css } from 'lit'
+import { css } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
-import { tokenStyles } from '../primitives/tokens.css.js'
+import { FpvCanvas, type FrameInfo } from '../render/fpv-canvas.js'
+import type { SceneNode } from '@core/render/engine2d'
 import type { FlightTimeResult } from '@core/flighttime/types.js'
 import { voltageAtDischarge } from '@core/flighttime/calculate.js'
 
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+/**
+ * Pack discharge chart for the flight time tool (engine-based). Hovering the
+ * discharge curve shows time / pack voltage / remaining capacity at the
+ * pointer; the hover and cruise markers carry their endurance numbers.
+ */
 @customElement('flight-time-canvas')
-export class FlightTimeCanvas extends LitElement {
+export class FlightTimeCanvas extends FpvCanvas {
   static styles = [
-    tokenStyles,
-    css`
-      :host {
-        display: block;
-        min-height: 220px;
-        position: relative;
-        background: var(--fpv-surface);
-        border: 1px solid var(--fpv-border);
-        border-radius: var(--fpv-radius-md);
-        overflow: hidden;
-      }
-      canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-    `,
+    ...FpvCanvas.styles,
+    css`:host { min-height: 220px; }`,
   ]
 
   @property({ type: Object }) result: FlightTimeResult | null = null
   @property({ type: String }) chemistry: 'lipo' | 'liion' = 'liion'
   @property({ type: Number }) cellCount = 6
 
-  private _canvas!: HTMLCanvasElement
-  private _ctx!: CanvasRenderingContext2D
-  private _rafId = 0
-  private _running = false
-  private _dirty = true
-  private _observer!: ResizeObserver
-
-  firstUpdated() {
-    this._canvas = this.shadowRoot!.querySelector('canvas')!
-    const ctx = this._canvas.getContext('2d')
-    if (!ctx) return
-    this._ctx = ctx
-    this._observer = new ResizeObserver(() => this._resize())
-    this._observer.observe(this)
-    this._resize()
-    this._running = true
-    this._loop()
+  constructor() {
+    super()
+    this.orbitEnabled = false
   }
 
-  updated() { this._dirty = true }
-
-  disconnectedCallback() {
-    super.disconnectedCallback()
-    this._running = false
-    cancelAnimationFrame(this._rafId)
-    this._observer?.disconnect()
-  }
-
-  private _loop() {
-    if (!this._running) return
-    this._rafId = requestAnimationFrame(() => {
-      if (!this._running) return
-      if (this._dirty) { this._draw(); this._dirty = false }
-      this._loop()
-    })
-  }
-
-  private _resize() {
-    const dpr = window.devicePixelRatio || 1
-    const w = this.offsetWidth, h = this.offsetHeight
-    if (!w || !h) return
-    this._canvas.width = Math.round(w * dpr)
-    this._canvas.height = Math.round(h * dpr)
-    this._dirty = true
-  }
-
-  private _draw() {
-    const ctx = this._ctx, canvas = this._canvas
-    if (!ctx || !canvas.width) return
-
-    const dpr = window.devicePixelRatio || 1
-    const W = canvas.width / dpr, H = canvas.height / dpr
-
-    ctx.save()
-    ctx.scale(dpr, dpr)
-    ctx.clearRect(0, 0, W, H)
-
-    const cs = getComputedStyle(this)
-    const get = (v: string, fb: string) => cs.getPropertyValue(v).trim() || fb
-    const clrPrimary = get('--fpv-primary', '#00d4aa')
-    const clrAccent = get('--fpv-accent', '#ff6b35')
-    const clrInfo = get('--fpv-info', '#4488ff')
-    const clrBorder = get('--fpv-border', '#2a2a3a')
-    const clrText = get('--fpv-text', '#e0e0e8')
-    const clrMuted = get('--fpv-text-muted', '#8888a0')
-    const clrSurface2 = get('--fpv-surface-2', '#1e1e2e')
-    const fontMono = get('--fpv-font-mono', 'JetBrains Mono, monospace')
-    const fontSans = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
-
-    if (!this.result) {
-      ctx.fillStyle = clrMuted
-      ctx.font = `13px ${fontSans}`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText('Enter inputs to see discharge curve', W / 2, H / 2)
-      ctx.restore()
-      return
-    }
-
-    const r = this.result
+  /** Chart geometry shared by the scene and the axis overlay. */
+  private _layout(f: FrameInfo) {
+    const r = this.result!
     const pad = { top: 20, right: 20, bottom: 40, left: 52 }
-    const cW = W - pad.left - pad.right
-    const cH = H - pad.top - pad.bottom
+    const cW = f.W - pad.left - pad.right
+    const cH = f.H - pad.top - pad.bottom
 
     // Time range: 0 → hoverTime + 20%
     const maxTime = r.hoverTimeMin * 1.2
@@ -118,33 +43,163 @@ export class FlightTimeCanvas extends LitElement {
 
     const xScale = (t: number) => pad.left + (t / maxTime) * cW
     const yScale = (v: number) => pad.top + (1 - (v - vMin) / vRange) * cH
+    return { pad, cW, cH, maxTime, cells, vMin, vRange, xScale, yScale }
+  }
 
-    // Zone fills
+  protected buildScene(f: FrameInfo): SceneNode[] {
+    const r = this.result
+    if (!r) return []
+
+    const clrPrimary = f.color('--fpv-primary', '#00d4aa')
+    const clrInfo = f.color('--fpv-info', '#4488ff')
+    const clrBorder = f.color('--fpv-border', '#2a2a3a')
+    const fontSans = f.color('--fpv-font-sans', 'Inter, system-ui, sans-serif')
+
+    const { pad, cW, cH, maxTime, cells, vMin, xScale, yScale } = this._layout(f)
+    const nodes: SceneNode[] = []
+
     const hoverEndX = xScale(r.hoverTimeMin)
     const cruiseEndX = xScale(Math.min(r.cruiseTimeMin, maxTime))
-
-    // Hover zone (blue-tinted)
-    ctx.fillStyle = clrInfo + '18'
-    ctx.fillRect(pad.left, pad.top, Math.min(hoverEndX, pad.left + cW) - pad.left, cH)
-
-    // Cruise zone (primary-tinted)
-    if (r.cruiseTimeMin < r.hoverTimeMin) {
-      ctx.fillStyle = clrPrimary + '14'
-      ctx.fillRect(cruiseEndX, pad.top, hoverEndX - cruiseEndX, cH)
-    }
-
-    // Reserve zone (crosshatch with border colour)
     const reserveEndX = xScale(maxTime)
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(hoverEndX, pad.top, reserveEndX - hoverEndX, cH)
-    ctx.clip()
-    ctx.strokeStyle = clrBorder
-    ctx.lineWidth = 1
-    for (let x = hoverEndX; x < reserveEndX + cH; x += 10) {
-      ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x - cH, pad.top + cH); ctx.stroke()
+
+    // Zone fills (hover / cruise / reserve crosshatch)
+    nodes.push({
+      id: 'zones', kind: 'chart', depth: 0,
+      draw: (ctx) => {
+        // Hover zone (blue-tinted)
+        ctx.fillStyle = clrInfo + '18'
+        ctx.fillRect(pad.left, pad.top, Math.min(hoverEndX, pad.left + cW) - pad.left, cH)
+
+        // Cruise zone (primary-tinted)
+        if (r.cruiseTimeMin < r.hoverTimeMin) {
+          ctx.fillStyle = clrPrimary + '14'
+          ctx.fillRect(cruiseEndX, pad.top, hoverEndX - cruiseEndX, cH)
+        }
+
+        // Reserve zone (crosshatch with border colour)
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(hoverEndX, pad.top, reserveEndX - hoverEndX, cH)
+        ctx.clip()
+        ctx.strokeStyle = clrBorder
+        ctx.lineWidth = 1
+        for (let x = hoverEndX; x < reserveEndX + cH; x += 10) {
+          ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x - cH, pad.top + cH); ctx.stroke()
+        }
+        ctx.restore()
+      },
+    })
+
+    // Discharge curve (linear approx) with a pointer-tracked readout
+    const steps = 100
+    const curvePts: [number, number][] = []
+    for (let i = 0; i <= steps; i++) {
+      const t = maxTime * i / steps
+      const pct = Math.min(1, t / r.hoverTimeMin)
+      const v = voltageAtDischarge(this.chemistry, pct) * cells
+      curvePts.push([xScale(t), yScale(Math.max(vMin, v))])
     }
-    ctx.restore()
+    const curveMeta: Record<string, unknown> = { label: 'Discharge curve' }
+    let dotX = 0, dotY = 0
+    if (this.pointerPos) {
+      const t = clamp((this.pointerPos.x - pad.left) / cW, 0, 1) * maxTime
+      const pct = Math.min(1, t / r.hoverTimeMin)
+      const v = Math.max(vMin, voltageAtDischarge(this.chemistry, pct) * cells)
+      curveMeta.time = `${t.toFixed(1)} min`
+      curveMeta['pack voltage'] = `${v.toFixed(2)} V`
+      curveMeta['per cell'] = `${(v / cells).toFixed(2)} V`
+      curveMeta.remaining = `${(r.usableCapacityMah * (1 - pct)).toFixed(0)} mAh`
+      dotX = xScale(t); dotY = yScale(v)
+    }
+    nodes.push({
+      id: 'discharge-curve', kind: 'chart', depth: 2,
+      meta: curveMeta,
+      hit: { type: 'polyline', points: curvePts, width: 9 },
+      draw: (ctx, { hovered }) => {
+        ctx.beginPath()
+        curvePts.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y) })
+        ctx.strokeStyle = clrPrimary
+        ctx.lineWidth = 2.5
+        ctx.lineCap = 'round'
+        ctx.stroke()
+        if (hovered && this.pointerPos) {
+          ctx.beginPath()
+          ctx.arc(dotX, dotY, 3.5, 0, Math.PI * 2)
+          ctx.fillStyle = clrPrimary
+          ctx.fill()
+        }
+      },
+    })
+
+    // Vertical markers
+    const marker = (
+      id: string, t: number, label: string, color: string, meta: Record<string, unknown>,
+    ) => {
+      if (t > maxTime) return
+      const x = xScale(t)
+      nodes.push({
+        id, kind: 'chart', depth: 3,
+        meta,
+        hit: { type: 'segment', x1: x, y1: pad.top, x2: x, y2: pad.top + cH, width: 8 },
+        draw: (ctx) => {
+          ctx.strokeStyle = color
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 3])
+          ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + cH); ctx.stroke()
+          ctx.setLineDash([])
+          // Badge
+          ctx.font = `bold 10px ${fontSans}`
+          const bW = ctx.measureText(label).width + 10
+          const bH = 16
+          const bY = pad.top + 4
+          const bX = Math.min(x + 3, pad.left + cW - bW - 2)
+          ctx.fillStyle = color + 'dd'
+          ctx.beginPath()
+          ctx.roundRect(bX, bY, bW, bH, 3)
+          ctx.fill()
+          ctx.fillStyle = '#000'
+          ctx.textAlign = 'left'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(label, bX + 5, bY + bH / 2 + 1)
+        },
+      })
+    }
+
+    marker('hover-marker', r.hoverTimeMin, `Hover ${r.hoverTimeMin.toFixed(1)}m`, clrInfo, {
+      label: 'Hover endurance',
+      time: `${r.hoverTimeMin.toFixed(1)} min`,
+      current: `${r.hoverCurrentA.toFixed(1)} A`,
+      'C-rate': `${r.packDischargeC.toFixed(1)}C`,
+      reserve: `${r.reserveCapacityMah.toFixed(0)} mAh`,
+    })
+    if (r.cruiseTimeMin < r.hoverTimeMin) {
+      marker('cruise-marker', r.cruiseTimeMin, `Cruise ${r.cruiseTimeMin.toFixed(1)}m`, clrPrimary, {
+        label: 'Cruise endurance',
+        time: `${r.cruiseTimeMin.toFixed(1)} min`,
+        current: `${r.cruiseCurrentA.toFixed(1)} A`,
+        range: `${r.maxRangeKm.toFixed(2)} km`,
+      })
+    }
+
+    return nodes
+  }
+
+  protected drawOverlay(ctx: CanvasRenderingContext2D, f: FrameInfo): void {
+    const clrBorder = f.color('--fpv-border', '#2a2a3a')
+    const clrMuted = f.color('--fpv-text-muted', '#8888a0')
+    const fontMono = f.color('--fpv-font-mono', 'JetBrains Mono, monospace')
+    const fontSans = f.color('--fpv-font-sans', 'Inter, system-ui, sans-serif')
+
+    if (!this.result) {
+      ctx.fillStyle = clrMuted
+      ctx.font = `13px ${fontSans}`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('Enter inputs to see discharge curve', f.W / 2, f.H / 2)
+      return
+    }
+
+    const { pad, cW, cH, maxTime, vMin, vRange, xScale, yScale } = this._layout(f)
 
     // Axes
     ctx.strokeStyle = clrBorder
@@ -181,56 +236,7 @@ export class FlightTimeCanvas extends LitElement {
       ctx.strokeStyle = clrBorder
       ctx.beginPath(); ctx.moveTo(x, pad.top + cH); ctx.lineTo(x, pad.top + cH + 3); ctx.stroke()
     }
-
-    // Discharge curve (linear approx)
-    const steps = 100
-    ctx.beginPath()
-    ctx.strokeStyle = clrPrimary
-    ctx.lineWidth = 2.5
-    ctx.lineCap = 'round'
-    for (let i = 0; i <= steps; i++) {
-      const t = maxTime * i / steps
-      const pct = Math.min(1, t / r.hoverTimeMin)
-      const v = voltageAtDischarge(this.chemistry, pct) * cells
-      const x = xScale(t), y = yScale(Math.max(vMin, v))
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y)
-    }
-    ctx.stroke()
-
-    // Vertical markers
-    const drawMarker = (t: number, label: string, color: string) => {
-      if (t > maxTime) return
-      const x = xScale(t)
-      ctx.strokeStyle = color
-      ctx.lineWidth = 1.5
-      ctx.setLineDash([4, 3])
-      ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + cH); ctx.stroke()
-      ctx.setLineDash([])
-      // Badge
-      ctx.font = `bold 10px ${fontSans}`
-      const bW = ctx.measureText(label).width + 10
-      const bH = 16
-      const bY = pad.top + 4
-      const bX = Math.min(x + 3, pad.left + cW - bW - 2)
-      ctx.fillStyle = color + 'dd'
-      ctx.beginPath()
-      ctx.roundRect(bX, bY, bW, bH, 3)
-      ctx.fill()
-      ctx.fillStyle = '#000'
-      ctx.textAlign = 'left'
-      ctx.fillText(label, bX + 5, bY + bH / 2 + 1)
-    }
-
-    ctx.textBaseline = 'middle'
-    drawMarker(r.hoverTimeMin, `Hover ${r.hoverTimeMin.toFixed(1)}m`, clrInfo)
-    if (r.cruiseTimeMin < r.hoverTimeMin) {
-      drawMarker(r.cruiseTimeMin, `Cruise ${r.cruiseTimeMin.toFixed(1)}m`, clrPrimary)
-    }
-
-    ctx.restore()
   }
-
-  render() { return html`<canvas></canvas>` }
 }
 
 declare global {

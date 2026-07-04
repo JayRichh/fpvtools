@@ -1,27 +1,27 @@
-import { LitElement, html, css } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
-import { tokenStyles } from '../primitives/tokens.css.js'
+import { FpvCanvas, type FrameInfo } from '../render/fpv-canvas.js'
+import type { SceneNode } from '@core/render/engine2d'
 
 const TAU = Math.PI * 2
+const LEGEND_H = 50
+const RING_SEGMENTS = 72
 
+/** Ring outline as a screen-space polyline (matches the stroked circle). */
+function ringPoints(cx: number, cy: number, r: number): Array<readonly [number, number]> {
+  const pts: Array<readonly [number, number]> = []
+  for (let i = 0; i <= RING_SEGMENTS; i++) {
+    const a = (i / RING_SEGMENTS) * TAU
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r])
+  }
+  return pts
+}
+
+/**
+ * Top-down range comparison for control vs video links (engine-based).
+ * Hovering a range ring shows the link's label, range and margin.
+ */
 @customElement('rf-range-viz')
-export class RfRangeViz extends LitElement {
-  static styles = [
-    tokenStyles,
-    css`
-      :host {
-        display: block;
-        min-height: 200px;
-        position: relative;
-        background: var(--fpv-surface);
-        border: 1px solid var(--fpv-border);
-        border-radius: var(--fpv-radius-md);
-        overflow: hidden;
-      }
-      canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-    `,
-  ]
-
+export class RfRangeViz extends FpvCanvas {
   @property({ type: Number }) primaryRangeKm = 0
   @property({ type: Number }) primaryMarginDb = 0
   @property({ type: String }) primaryLabel = 'Control'
@@ -30,51 +30,7 @@ export class RfRangeViz extends LitElement {
   @property({ type: String }) secondaryLabel = 'Video'
   @property({ type: Boolean }) dualLink = false
 
-  private _canvas!: HTMLCanvasElement
-  private _ctx!: CanvasRenderingContext2D
-  private _rafId = 0
-  private _running = false
-  private _dirty = true
-  private _observer!: ResizeObserver
-
-  firstUpdated() {
-    this._canvas = this.shadowRoot!.querySelector('canvas')!
-    const ctx = this._canvas.getContext('2d')
-    if (!ctx) return
-    this._ctx = ctx
-    this._observer = new ResizeObserver(() => this._resize())
-    this._observer.observe(this)
-    this._resize()
-    this._running = true
-    this._loop()
-  }
-
-  updated() { this._dirty = true }
-
-  disconnectedCallback() {
-    super.disconnectedCallback()
-    this._running = false
-    cancelAnimationFrame(this._rafId)
-    this._observer?.disconnect()
-  }
-
-  private _loop() {
-    if (!this._running) return
-    this._rafId = requestAnimationFrame(() => {
-      if (!this._running) return
-      if (this._dirty) { this._draw(); this._dirty = false }
-      this._loop()
-    })
-  }
-
-  private _resize() {
-    const dpr = window.devicePixelRatio || 1
-    const w = this.offsetWidth, h = this.offsetHeight
-    if (!w || !h) return
-    this._canvas.width = Math.round(w * dpr)
-    this._canvas.height = Math.round(h * dpr)
-    this._dirty = true
-  }
+  protected orbitEnabled = false
 
   private _marginColor(margin: number, clrSuccess: string, clrAccent: string, clrError: string): string {
     if (margin >= 15) return clrSuccess
@@ -82,80 +38,119 @@ export class RfRangeViz extends LitElement {
     return clrError
   }
 
-  private _draw() {
-    const ctx = this._ctx, canvas = this._canvas
-    if (!ctx || !canvas.width) return
-
-    const dpr = window.devicePixelRatio || 1
-    const W = canvas.width / dpr, H = canvas.height / dpr
-
-    ctx.save()
-    ctx.scale(dpr, dpr)
-    ctx.clearRect(0, 0, W, H)
-
-    const cs = getComputedStyle(this)
-    const get = (v: string, fb: string) => cs.getPropertyValue(v).trim() || fb
-    const clrSuccess = get('--fpv-success', '#44cc88')
-    const clrAccent = get('--fpv-accent', '#ff6b35')
-    const clrError = get('--fpv-error', '#ff4466')
-    const clrPrimary = get('--fpv-primary', '#00d4aa')
-    const clrBorder = get('--fpv-border', '#2a2a3a')
-    const clrText = get('--fpv-text', '#e0e0e8')
-    const clrMuted = get('--fpv-text-muted', '#8888a0')
-    const fontMono = get('--fpv-font-mono', 'JetBrains Mono, monospace')
-    const fontSans = get('--fpv-font-sans', 'Inter, system-ui, sans-serif')
-
-    const legendH = 50
-    const cx = W / 2, cy = (H - legendH) / 2
-    const maxRange = this.dualLink
+  private _maxRange(): number {
+    return this.dualLink
       ? Math.max(this.primaryRangeKm, this.secondaryRangeKm)
       : this.primaryRangeKm
+  }
+
+  protected buildScene(f: FrameInfo): SceneNode[] {
+    const clrSuccess = f.color('--fpv-success', '#44cc88')
+    const clrAccent = f.color('--fpv-accent', '#ff6b35')
+    const clrError = f.color('--fpv-error', '#ff4466')
+    const clrText = f.color('--fpv-text', '#e0e0e8')
+    const clrMuted = f.color('--fpv-text-muted', '#8888a0')
+    const fontSans = f.color('--fpv-font-sans', 'Inter, system-ui, sans-serif')
+
+    const cx = f.W / 2, cy = (f.H - LEGEND_H) / 2
+    const maxRange = this._maxRange()
+
     if (maxRange <= 0) {
-      ctx.fillStyle = clrMuted
-      ctx.font = `13px ${fontSans}`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText('Enter link parameters to see range', cx, cy)
-      ctx.restore()
-      return
+      return [{
+        id: 'empty', kind: 'label', depth: 0,
+        draw: (ctx) => {
+          ctx.fillStyle = clrMuted
+          ctx.font = `13px ${fontSans}`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('Enter link parameters to see range', cx, cy)
+        },
+      }]
     }
 
     const maxR = Math.min(cx - 16, cy - 16)
-    const primaryR = maxRange > 0 ? (this.primaryRangeKm / maxRange) * maxR : 0
+    const primaryR = (this.primaryRangeKm / maxRange) * maxR
     const primaryColor = this._marginColor(this.primaryMarginDb, clrSuccess, clrAccent, clrError)
 
-    // Primary circle
-    ctx.beginPath()
-    ctx.arc(cx, cy, primaryR, 0, TAU)
-    ctx.fillStyle = primaryColor + '15'
-    ctx.fill()
-    ctx.strokeStyle = primaryColor
-    ctx.lineWidth = 2
-    ctx.stroke()
+    const linkMeta = (label: string, rangeKm: number, marginDb: number) => ({
+      label,
+      range: `${rangeKm.toFixed(2)} km`,
+      margin: `${marginDb > 0 ? '+' : ''}${marginDb.toFixed(1)} dB`,
+    })
 
-    // Secondary circle (if dual link)
+    const nodes: SceneNode[] = []
+
+    // Primary range ring
+    nodes.push({
+      id: 'primary-ring', kind: 'chart', depth: 0,
+      meta: linkMeta(this.primaryLabel, this.primaryRangeKm, this.primaryMarginDb),
+      hit: { type: 'polyline', points: ringPoints(cx, cy, primaryR), width: 10 },
+      draw: (ctx, { hovered }) => {
+        ctx.beginPath()
+        ctx.arc(cx, cy, primaryR, 0, TAU)
+        ctx.fillStyle = primaryColor + (hovered ? '22' : '15')
+        ctx.fill()
+        ctx.strokeStyle = primaryColor
+        ctx.lineWidth = hovered ? 2.5 : 2
+        ctx.stroke()
+      },
+    })
+
+    // Secondary range ring (if dual link)
     if (this.dualLink && this.secondaryRangeKm > 0) {
       const secR = (this.secondaryRangeKm / maxRange) * maxR
       const secColor = this._marginColor(this.secondaryMarginDb, clrSuccess, clrAccent, clrError)
-      ctx.beginPath()
-      ctx.arc(cx, cy, secR, 0, TAU)
-      ctx.fillStyle = secColor + '10'
-      ctx.fill()
-      ctx.strokeStyle = clrAccent
-      ctx.lineWidth = 1.5
-      ctx.setLineDash([5, 3])
-      ctx.stroke()
-      ctx.setLineDash([])
+      nodes.push({
+        id: 'secondary-ring', kind: 'chart', depth: 1,
+        meta: linkMeta(this.secondaryLabel, this.secondaryRangeKm, this.secondaryMarginDb),
+        hit: { type: 'polyline', points: ringPoints(cx, cy, secR), width: 10 },
+        draw: (ctx, { hovered }) => {
+          ctx.beginPath()
+          ctx.arc(cx, cy, secR, 0, TAU)
+          ctx.fillStyle = secColor + (hovered ? '18' : '10')
+          ctx.fill()
+          ctx.strokeStyle = clrAccent
+          ctx.lineWidth = hovered ? 2 : 1.5
+          ctx.setLineDash([5, 3])
+          ctx.stroke()
+          ctx.setLineDash([])
+        },
+      })
     }
 
-    // Centre dot
-    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, TAU)
-    ctx.fillStyle = clrText; ctx.fill()
+    // Centre dot (pilot position)
+    nodes.push({
+      id: 'centre', kind: 'entity', depth: 2,
+      draw: (ctx) => {
+        ctx.beginPath(); ctx.arc(cx, cy, 4, 0, TAU)
+        ctx.fillStyle = clrText; ctx.fill()
+      },
+    })
+
+    return nodes
+  }
+
+  protected drawOverlay(ctx: CanvasRenderingContext2D, f: FrameInfo): void {
+    const { W, H } = f
+    const maxRange = this._maxRange()
+    if (maxRange <= 0) return
+
+    const clrSuccess = f.color('--fpv-success', '#44cc88')
+    const clrAccent = f.color('--fpv-accent', '#ff6b35')
+    const clrError = f.color('--fpv-error', '#ff4466')
+    const clrText = f.color('--fpv-text', '#e0e0e8')
+    const clrMuted = f.color('--fpv-text-muted', '#8888a0')
+    const fontMono = f.color('--fpv-font-mono', 'JetBrains Mono, monospace')
+    const fontSans = f.color('--fpv-font-sans', 'Inter, system-ui, sans-serif')
+
+    const cx = W / 2, cy = (H - LEGEND_H) / 2
+    const maxR = Math.min(cx - 16, cy - 16)
+    const primaryColor = this._marginColor(this.primaryMarginDb, clrSuccess, clrAccent, clrError)
 
     // Scale bar (bottom left)
     const scaleBarKm = maxRange > 10 ? Math.round(maxRange / 3) : Math.round(maxRange / 3 * 10) / 10
     const scaleBarPx = (scaleBarKm / maxRange) * maxR
-    const sbX = 14, sbY = H - legendH - 14
+    const sbX = 14, sbY = H - LEGEND_H - 14
     ctx.strokeStyle = clrMuted; ctx.lineWidth = 1.5
     ctx.beginPath(); ctx.moveTo(sbX, sbY); ctx.lineTo(sbX + scaleBarPx, sbY); ctx.stroke()
     ctx.beginPath(); ctx.moveTo(sbX, sbY - 4); ctx.lineTo(sbX, sbY + 4); ctx.stroke()
@@ -164,7 +159,7 @@ export class RfRangeViz extends LitElement {
     ctx.fillText(`${scaleBarKm} km`, sbX, sbY - 5)
 
     // Legend
-    const legY = H - legendH + 10
+    const legY = H - LEGEND_H + 10
     const drawLegendItem = (x: number, color: string, label: string, rangeKm: number, marginDb: number) => {
       ctx.beginPath(); ctx.arc(x, legY + 6, 5, 0, TAU); ctx.fillStyle = color; ctx.fill()
       ctx.font = `11px ${fontSans}`; ctx.fillStyle = clrText; ctx.textAlign = 'left'; ctx.textBaseline = 'top'
@@ -178,11 +173,7 @@ export class RfRangeViz extends LitElement {
       const secColor = this._marginColor(this.secondaryMarginDb, clrSuccess, clrAccent, clrError)
       drawLegendItem(W / 2 + 4, secColor, this.secondaryLabel, this.secondaryRangeKm, this.secondaryMarginDb)
     }
-
-    ctx.restore()
   }
-
-  render() { return html`<canvas></canvas>` }
 }
 
 declare global {
