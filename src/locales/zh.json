@@ -87,7 +87,10 @@
     "flighttime_name": "飞行时间计算器",
     "flighttime_desc": "估算Li-ion和LiPo电池包的悬停和巡航飞行时间和距离。",
     "sim_name": "FPV 飞行模拟器",
-    "sim_desc": "在浏览器中飞行虚拟四轴。键盘和鼠标控制、简易（姿态）和普通（特技）模式、从Whoop到电影级四轴的预设。"
+    "sim_desc": "在浏览器中飞行虚拟四轴。键盘和鼠标控制、简易（姿态）和普通（特技）模式、从Whoop到电影级四轴的预设。",
+    "group_simulate": "模拟与调参",
+    "group_plan": "规划装机",
+    "group_reference": "现场参考"
   },
   "seo": {
     "home_title": "FPV Tools — 为FPV飞手打造的浏览器端计算器",

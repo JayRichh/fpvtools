@@ -87,7 +87,10 @@
     "flighttime_name": "Flugzeit-Rechner",
     "flighttime_desc": "Schätzen Sie die Schwebe- und Reiseflugzeit sowie Reichweite für Li-Ion- und LiPo-Akkus.",
     "sim_name": "FPV-Simulator",
-    "sim_desc": "Fliege einen virtuellen Quad in deinem Browser. Tastatur + Maussteuerung, Anfänger (Winkel) und Normal (Acro) Modi, Quad-Presets von Whoop bis Cinelifter."
+    "sim_desc": "Fliege einen virtuellen Quad in deinem Browser. Tastatur + Maussteuerung, Anfänger (Winkel) und Normal (Acro) Modi, Quad-Presets von Whoop bis Cinelifter.",
+    "group_simulate": "Simulieren & Tunen",
+    "group_plan": "Build planen",
+    "group_reference": "Feld-Referenz"
   },
   "seo": {
     "home_title": "FPV Tools — Browser-native Rechner für FPV-Piloten",

@@ -87,7 +87,10 @@
     "flighttime_name": "비행 시간 계산기",
     "flighttime_desc": "Li-ion 및 LiPo 배터리 팩의 호버링 및 순항 비행 시간과 항속 거리를 추정하세요.",
     "sim_name": "FPV 플라이트 시뮬레이터",
-    "sim_desc": "브라우저에서 가상 쿼드를 조종하세요. 키보드 + 마우스 조종, Easy(각도) 및 Normal(아크로) 모드, 웝부터 시네마 리프터까지의 쿼드 프리셋."
+    "sim_desc": "브라우저에서 가상 쿼드를 조종하세요. 키보드 + 마우스 조종, Easy(각도) 및 Normal(아크로) 모드, 웝부터 시네마 리프터까지의 쿼드 프리셋.",
+    "group_simulate": "시뮬레이션 & 튜닝",
+    "group_plan": "빌드 계획",
+    "group_reference": "필드 레퍼런스"
   },
   "seo": {
     "home_title": "FPV Tools — FPV 파일럿을 위한 브라우저 기반 계산기",

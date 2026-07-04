@@ -13,12 +13,21 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html {
+  /* keep the workspace stable: no horizontal overflow, no scrollbar jump */
+  overflow-x: clip;
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--fpv-font-sans);
   font-size: var(--fpv-font-body);
   color: var(--fpv-text);
   background-color: var(--fpv-bg);
   line-height: 1.5;
+  /* data app: aligned digits everywhere (inherits into shadow DOM) */
+  font-variant-numeric: tabular-nums;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

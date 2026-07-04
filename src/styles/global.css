@@ -14,6 +14,7 @@
   font-size: var(--fpv-font-h1);
   font-weight: 600;
   line-height: 1.25;
+  letter-spacing: -0.01em;
   color: var(--fpv-text);
   margin-bottom: var(--fpv-space-xs);
 }
@@ -22,4 +23,5 @@
   color: var(--fpv-text-muted);
   margin-bottom: var(--fpv-space-lg);
   font-size: var(--fpv-font-label);
+  max-width: 72ch;
 }

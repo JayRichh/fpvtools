@@ -218,7 +218,7 @@ export class LinkBudget extends LitElement {
         </fpv-card>
 
         <rf-range-viz
-          style="height:220px"
+          style="height:clamp(240px,32vh,420px)"
           .primaryRangeKm=${r.theoreticalRangeKm}
           .primaryMarginDb=${r.linkMarginDb}
           primaryLabel="Control (ELRS)"

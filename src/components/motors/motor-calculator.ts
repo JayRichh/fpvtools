@@ -392,7 +392,7 @@ export class MotorCalculator extends LitElement {
     const r = this._result
     return html`
       <motor-gauge
-        style="height:clamp(280px,38vh,400px)"
+        style="height:clamp(300px,46vh,560px)"
         .thrustToWeight=${r.thrustToWeight}
         .motorMaxCurrentA=${this._motor.maxCurrentA}
         .motorCount=${this._motorCount}

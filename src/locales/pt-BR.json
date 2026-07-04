@@ -87,7 +87,10 @@
     "flighttime_name": "Calculadora de Tempo de Voo",
     "flighttime_desc": "Estime o tempo de voo em pairado e cruzeiro e alcance para packs de baterias Li-ion e LiPo.",
     "sim_name": "Simulador FPV",
-    "sim_desc": "Voe em um quad virtual no seu navegador. Controles de teclado + mouse, modos Easy (ângulo) e Normal (acro), presets de quad de whoop a cinelifter."
+    "sim_desc": "Voe em um quad virtual no seu navegador. Controles de teclado + mouse, modos Easy (ângulo) e Normal (acro), presets de quad de whoop a cinelifter.",
+    "group_simulate": "Simular e ajustar",
+    "group_plan": "Planejar um build",
+    "group_reference": "Referência de campo"
   },
   "seo": {
     "home_title": "FPV Tools — Calculadoras Nativas para Pilotos FPV",

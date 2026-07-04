@@ -192,12 +192,11 @@ router.afterEach(() => { navOpen.value = false })
     min-height: 44px;
     display: flex;
     align-items: center;
-    border-left: 2px solid transparent;
   }
 
   .nav-links a.router-link-exact-active {
-    border-left-color: var(--fpv-primary);
-    background: var(--fpv-surface-2);
+    color: var(--fpv-primary);
+    background: color-mix(in srgb, var(--fpv-primary) 8%, var(--fpv-surface-2));
   }
 
   .main {

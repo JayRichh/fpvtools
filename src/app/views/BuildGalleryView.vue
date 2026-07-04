@@ -195,7 +195,7 @@ async function onImport(e: Event) {
     await importBuild(file)
     refresh()
   } catch (err) {
-    alert(t('build.error_import_failed', { message: err }))
+    alert(t('build.error_import_failed', { message: err instanceof Error ? err.message : String(err) }))
   }
 }
 </script>
