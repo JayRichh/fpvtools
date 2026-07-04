@@ -54,6 +54,7 @@
     "diff": "Diff",
     "build": "Build",
     "flighttime": "Flight Time",
+    "sim": "Simulator",
     "prefs_label": "Preferences"
   },
   "prefs": {
@@ -84,7 +85,9 @@
     "build_name": "Build Planner",
     "build_desc": "Plan and track your FPV build — parts list, store guide, checklist, and firmware links.",
     "flighttime_name": "Flight Time",
-    "flighttime_desc": "Estimate hover and cruise flight time and range for Li-ion and LiPo packs."
+    "flighttime_desc": "Estimate hover and cruise flight time and range for Li-ion and LiPo packs.",
+    "sim_name": "FPV Simulator",
+    "sim_desc": "Fly a virtual quad in your browser. Keyboard + mouse controls, Easy (angle) and Normal (acro) modes, quad presets from whoop to cinelifter."
   },
   "seo": {
     "home_title": "FPV Tools — Browser-Native Calculators for FPV Pilots",
@@ -108,7 +111,9 @@
     "build_title": "Build Planner | FPV Tools",
     "build_desc": "Plan and track your FPV build. Parts list, store guide, checklist, and firmware links — all in your browser.",
     "flighttime_title": "Flight Time Calculator | FPV Tools",
-    "flighttime_desc": "Estimate flight time and range for Li-ion and LiPo FPV packs. Visualize discharge curve and reserve."
+    "flighttime_desc": "Estimate flight time and range for Li-ion and LiPo FPV packs. Visualize discharge curve and reserve.",
+    "sim_title": "FPV Flight Simulator — FPV Tools",
+    "sim_desc": "Browser FPV drone simulator with Easy and Acro modes, full keyboard and mouse controls, and realistic quad presets. No install needed."
   },
   "pid": {
     "title": "PID Simulator",
@@ -459,5 +464,9 @@
     "title_check": "Build Checklist",
     "title_links": "Firmware & Links",
     "title_build": "Build"
+  },
+  "sim": {
+    "title": "FPV Simulator",
+    "subtitle": "Fly a virtual quad — arm with SPACE, throttle with W/S, steer with arrows or mouse. Easy mode self-levels; Normal mode is full acro."
   }
 }

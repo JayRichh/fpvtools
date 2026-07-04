@@ -91,8 +91,14 @@ export abstract class FpvCanvas extends LitElement {
 
   constructor() {
     super()
+    this.resetOrbit()
+  }
+
+  /** Restore the initial orbit angles (call after overriding initial*Deg). */
+  protected resetOrbit() {
     this.camYaw = this.initialYawDeg * DEG
     this.camPitch = this.initialPitchDeg * DEG
+    this.markDirty()
   }
 
   // ── Pointer wiring ─────────────────────────────────────────────────────────
@@ -154,9 +160,7 @@ export abstract class FpvCanvas extends LitElement {
     this._dirty = true
   }
   private _onDblClick = () => {
-    this.camYaw = this.initialYawDeg * DEG
-    this.camPitch = this.initialPitchDeg * DEG
-    this._dirty = true
+    this.resetOrbit()
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────

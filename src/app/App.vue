@@ -14,6 +14,7 @@
           <router-link to="/tilt">{{ t('nav.tilt') }}</router-link>
           <router-link to="/diff">{{ t('nav.diff') }}</router-link>
           <router-link to="/flighttime">{{ t('nav.flighttime') }}</router-link>
+          <router-link to="/sim">{{ t('nav.sim') }}</router-link>
         </nav>
         <button
           class="nav-hamburger"

@@ -93,6 +93,11 @@ const router = createRouter({
       name: 'flighttime',
       component: () => import('./views/FlightTimeView.vue'),
     },
+    {
+      path: '/sim',
+      name: 'sim',
+      component: () => import('./views/SimulatorView.vue'),
+    },
   ],
 })
 

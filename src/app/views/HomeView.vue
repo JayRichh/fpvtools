@@ -33,6 +33,7 @@ const tools = computed(() => [
   { name: t('home.tilt_name'), path: '/tilt', description: t('home.tilt_desc') },
   { name: t('home.diff_name'), path: '/diff', description: t('home.diff_desc') },
   { name: t('home.flighttime_name'), path: '/flighttime', description: t('home.flighttime_desc') },
+  { name: t('home.sim_name'), path: '/sim', description: t('home.sim_desc') },
 ])
 </script>
 

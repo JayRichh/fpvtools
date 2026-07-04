@@ -54,6 +54,7 @@
     "diff": "Vergleich",
     "build": "Bauen",
     "flighttime": "Flugzeit",
+    "sim": "Simulator",
     "prefs_label": "Einstellungen"
   },
   "prefs": {
@@ -84,7 +85,9 @@
     "build_name": "Build-Planer",
     "build_desc": "Planen und verfolgen Sie Ihren FPV-Build. Teileliste, Shop-Leitfaden, Checkliste und Firmware-Links — alles im Browser.",
     "flighttime_name": "Flugzeit-Rechner",
-    "flighttime_desc": "Schätzen Sie die Schwebe- und Reiseflugzeit sowie Reichweite für Li-Ion- und LiPo-Akkus."
+    "flighttime_desc": "Schätzen Sie die Schwebe- und Reiseflugzeit sowie Reichweite für Li-Ion- und LiPo-Akkus.",
+    "sim_name": "FPV-Simulator",
+    "sim_desc": "Fliege einen virtuellen Quad in deinem Browser. Tastatur + Maussteuerung, Anfänger (Winkel) und Normal (Acro) Modi, Quad-Presets von Whoop bis Cinelifter."
   },
   "seo": {
     "home_title": "FPV Tools — Browser-native Rechner für FPV-Piloten",
@@ -108,7 +111,9 @@
     "build_title": "Build-Planer | FPV Tools",
     "build_desc": "Planen und verfolgen Sie Ihren FPV-Build. Teileliste, Shop-Leitfaden, Checkliste und Firmware-Links — alles im Browser.",
     "flighttime_title": "Flugzeit-Rechner | FPV Tools",
-    "flighttime_desc": "Schätzen Sie die Flugzeit und Reichweite für Li-Ion- und LiPo-FPV-Akkus. Visualisieren Sie die Entladungskurve und Reserve."
+    "flighttime_desc": "Schätzen Sie die Flugzeit und Reichweite für Li-Ion- und LiPo-FPV-Akkus. Visualisieren Sie die Entladungskurve und Reserve.",
+    "sim_title": "FPV-Flugsimulator — FPV Tools",
+    "sim_desc": "Browser-basierter FPV-Drohnen-Simulator mit Anfänger- und Acro-Modus, vollständiger Tastatur- und Maussteuerung und realistischen Quad-Presets. Keine Installation erforderlich."
   },
   "pid": {
     "title": "PID-Simulator",
@@ -459,5 +464,9 @@
     "title_check": "Bau-Checkliste",
     "title_links": "Firmware und Links",
     "title_build": "Bau"
+  },
+  "sim": {
+    "title": "FPV-Simulator",
+    "subtitle": "Fliege einen virtuellen Quad — Arm mit SPACE, Gas mit W/S, Steuern mit Pfeiltasten oder Maus. Anfänger-Modus self-levels; Normal-Modus ist volles Acro."
   }
 }

@@ -11,4 +11,5 @@ export const ROUTE_SEO_KEYS: Record<string, string> = {
   '/blackbox': 'blackbox',
   '/build': 'build',
   '/flighttime': 'flighttime',
+  '/sim': 'sim',
 }

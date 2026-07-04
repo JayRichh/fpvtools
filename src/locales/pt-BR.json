@@ -54,6 +54,7 @@
     "diff": "Comparar",
     "build": "Construção",
     "flighttime": "Tempo de Voo",
+    "sim": "Simulador",
     "prefs_label": "Preferências"
   },
   "prefs": {
@@ -84,7 +85,9 @@
     "build_name": "Planejador de Construção",
     "build_desc": "Planeje e acompanhe sua construção FPV. Lista de peças, guia de loja, checklist e links de firmware — tudo no seu navegador.",
     "flighttime_name": "Calculadora de Tempo de Voo",
-    "flighttime_desc": "Estime o tempo de voo em pairado e cruzeiro e alcance para packs de baterias Li-ion e LiPo."
+    "flighttime_desc": "Estime o tempo de voo em pairado e cruzeiro e alcance para packs de baterias Li-ion e LiPo.",
+    "sim_name": "Simulador FPV",
+    "sim_desc": "Voe em um quad virtual no seu navegador. Controles de teclado + mouse, modos Easy (ângulo) e Normal (acro), presets de quad de whoop a cinelifter."
   },
   "seo": {
     "home_title": "FPV Tools — Calculadoras Nativas para Pilotos FPV",
@@ -108,7 +111,9 @@
     "build_title": "Planejador de Construção | FPV Tools",
     "build_desc": "Planeje e acompanhe sua construção FPV. Lista de peças, guia de loja, checklist e links de firmware — tudo no seu navegador.",
     "flighttime_title": "Calculadora de Tempo de Voo | FPV Tools",
-    "flighttime_desc": "Estime tempo de voo e alcance para baterias Li-ion e LiPo FPV. Visualize a curva de descarga e reserva."
+    "flighttime_desc": "Estime tempo de voo e alcance para baterias Li-ion e LiPo FPV. Visualize a curva de descarga e reserva.",
+    "sim_title": "Simulador de Voo FPV — FPV Tools",
+    "sim_desc": "Simulador de drone FPV no navegador com modos Easy e Acro, controles completos de teclado e mouse e presets realistas de quad. Sem necessidade de instalação."
   },
   "pid": {
     "title": "Simulador PID",
@@ -459,5 +464,9 @@
     "title_check": "Checklist de Construção",
     "title_links": "Firmware & Links",
     "title_build": "Construção"
+  },
+  "sim": {
+    "title": "Simulador FPV",
+    "subtitle": "Voe em um quad virtual — armar com SPACE, acelerador com W/S, direção com setas ou mouse. Modo Easy auto-levels; modo Normal é acro completo."
   }
 }

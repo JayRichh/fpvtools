@@ -54,6 +54,7 @@
     "diff": "비교",
     "build": "빌드",
     "flighttime": "비행 시간",
+    "sim": "시뮬레이터",
     "prefs_label": "환경설정"
   },
   "prefs": {
@@ -84,7 +85,9 @@
     "build_name": "빌드 플래너",
     "build_desc": "FPV 빌드를 계획하고 추적하세요. 부품 목록, 스토어 가이드, 체크리스트, 펌웨어 링크 — 모두 브라우저에서.",
     "flighttime_name": "비행 시간 계산기",
-    "flighttime_desc": "Li-ion 및 LiPo 배터리 팩의 호버링 및 순항 비행 시간과 항속 거리를 추정하세요."
+    "flighttime_desc": "Li-ion 및 LiPo 배터리 팩의 호버링 및 순항 비행 시간과 항속 거리를 추정하세요.",
+    "sim_name": "FPV 플라이트 시뮬레이터",
+    "sim_desc": "브라우저에서 가상 쿼드를 조종하세요. 키보드 + 마우스 조종, Easy(각도) 및 Normal(아크로) 모드, 웝부터 시네마 리프터까지의 쿼드 프리셋."
   },
   "seo": {
     "home_title": "FPV Tools — FPV 파일럿을 위한 브라우저 기반 계산기",
@@ -108,7 +111,9 @@
     "build_title": "빌드 플래너 | FPV Tools",
     "build_desc": "FPV 빌드를 계획하고 추적하세요. 부품 목록, 스토어 가이드, 체크리스트, 펌웨어 링크 — 모두 브라우저에서.",
     "flighttime_title": "비행 시간 계산기 | FPV Tools",
-    "flighttime_desc": "Li-ion 및 LiPo FPV 배터리 팩의 비행 시간과 항속 거리를 추정하세요. 방전 곡선과 여유도를 시각화합니다."
+    "flighttime_desc": "Li-ion 및 LiPo FPV 배터리 팩의 비행 시간과 항속 거리를 추정하세요. 방전 곡선과 여유도를 시각화합니다.",
+    "sim_title": "FPV 플라이트 시뮬레이터 — FPV Tools",
+    "sim_desc": "Easy 및 Acro 모드, 완전한 키보드 및 마우스 제어, 현실적인 쿼드 프리셋을 갖춘 브라우저 FPV 드론 시뮬레이터. 설치 불필요."
   },
   "pid": {
     "title": "PID 시뮬레이터",
@@ -459,5 +464,9 @@
     "title_check": "빌드 체크리스트",
     "title_links": "펌웨어 및 링크",
     "title_build": "빌드"
+  },
+  "sim": {
+    "title": "FPV 플라이트 시뮬레이터",
+    "subtitle": "가상 쿼드 조종 — SPACE로 암, W/S로 스로틀, 화살표 키 또는 마우스로 조향. Easy 모드는 자동 레벨링; Normal 모드는 완전 아크로."
   }
 }
