@@ -18,8 +18,13 @@ export class TiltViz extends FpvCanvas {
 
   constructor() {
     super()
-    this.initialPitchDeg = -22
-    this.initialYawDeg = 28
+    // Near side-profile: the tilt/FOV angles live in the YZ plane, so they
+    // read truly from the side; slight yaw keeps the 3D depth legible.
+    this.initialPitchDeg = -10
+    this.initialYawDeg = 78
+    // Gentle pitch range so the cone can't be collapsed into a top-down view
+    this.pitchMin = -0.9
+    this.pitchMax = 0.3
     this.resetOrbit()
   }
 

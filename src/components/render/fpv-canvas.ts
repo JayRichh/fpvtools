@@ -82,6 +82,10 @@ export abstract class FpvCanvas extends LitElement {
 
   protected camYaw = 0
   protected camPitch = 0
+  /** Wheel-zoom multiplier applied to the scene scale (dblclick resets) */
+  protected zoom = 1
+  protected zoomMin = 0.4
+  protected zoomMax = 3
   protected hoveredId: string | null = null
   protected pointerPos: { x: number; y: number } | null = null
 
@@ -94,10 +98,11 @@ export abstract class FpvCanvas extends LitElement {
     this.resetOrbit()
   }
 
-  /** Restore the initial orbit angles (call after overriding initial*Deg). */
+  /** Restore the initial orbit angles + zoom (call after overriding initial*Deg). */
   protected resetOrbit() {
     this.camYaw = this.initialYawDeg * DEG
     this.camPitch = this.initialPitchDeg * DEG
+    this.zoom = 1
     this.markDirty()
   }
 
@@ -162,6 +167,12 @@ export abstract class FpvCanvas extends LitElement {
   private _onDblClick = () => {
     this.resetOrbit()
   }
+  private _onWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    const next = this.zoom * Math.pow(1.0015, -e.deltaY)
+    this.zoom = Math.max(this.zoomMin, Math.min(this.zoomMax, next))
+    this._dirty = true
+  }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   firstUpdated() {
@@ -179,6 +190,7 @@ export abstract class FpvCanvas extends LitElement {
     this._canvas.addEventListener('mousemove', this._onCanvasMove)
     this._canvas.addEventListener('mouseleave', this._onCanvasLeave)
     this._canvas.addEventListener('dblclick', this._onDblClick)
+    this._canvas.addEventListener('wheel', this._onWheel, { passive: false })
     this._canvas.addEventListener('touchstart', this._onTouchStart, { passive: true })
     window.addEventListener('mousemove', this._onMouseMove)
     window.addEventListener('mouseup', this._onMouseUp)
@@ -253,7 +265,7 @@ export abstract class FpvCanvas extends LitElement {
     const cam = createOrbitCamera({
       yaw: this.camYaw,
       pitch: this.camPitch,
-      scale: Math.min(W, H) * this.sceneScaleFactor,
+      scale: Math.min(W, H) * this.sceneScaleFactor * this.zoom,
       focalLen: this.focalLen,
       cx: W / 2,
       cy: H / 2,

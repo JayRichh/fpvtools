@@ -142,8 +142,8 @@ export function stepSim(
   let thrustN = 0
   if (state.armed) {
     if (mode === 'easy') {
-      // Altitude assist: mid-stick hovers
-      thrustN = clamp(cfg.massKg * G * (1 + (throttle - 0.5) * 1.6), 0, maxThrustN)
+      // Altitude assist: mid-stick hovers, full stick pulls hard, low stick drops
+      thrustN = clamp(cfg.massKg * G * (1 + (throttle - 0.5) * 2.4), 0, maxThrustN)
     } else {
       thrustN = throttle * maxThrustN
     }

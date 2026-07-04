@@ -5,7 +5,7 @@ import { SIM_PRESETS, DEFAULT_SIM_PRESET } from '@core/sim/presets'
 import type { SimMode } from '@core/sim/types'
 import '../primitives/index.js'
 import './fpv-sim.js'
-import type { FpvSim } from './fpv-sim.js'
+import type { FpvSim, CamMode } from './fpv-sim.js'
 
 @customElement('fpv-simulator')
 export class FpvSimulator extends LitElement {
@@ -103,6 +103,7 @@ export class FpvSimulator extends LitElement {
   @state() private _mode: SimMode = 'easy'
   @state() private _presetKey = DEFAULT_SIM_PRESET
   @state() private _mouseSteer = false
+  @state() private _camMode: CamMode = 'follow'
   @query('fpv-sim') private _sim!: FpvSim
 
   private _setMode(mode: SimMode) {
@@ -117,7 +118,9 @@ export class FpvSimulator extends LitElement {
       ['A / D', 'yaw left / right'],
       ['↑ / ↓', 'pitch forward / back'],
       ['← / →', 'roll left / right'],
-      ['MOUSE DRAG', 'orbit camera'],
+      ['MOUSE DRAG', 'orbit / offset camera'],
+      ['WHEEL', 'zoom'],
+      ['C', 'camera: follow / orbit / FPV'],
       ['M', 'toggle mouse steering'],
       ['DBL-CLICK', 'reset camera'],
       ['R', 'reset flight'],
@@ -130,8 +133,10 @@ export class FpvSimulator extends LitElement {
           .mode=${this._mode}
           .presetKey=${this._presetKey}
           .mouseSteer=${this._mouseSteer}
+          .camMode=${this._camMode}
           @sim-mode-change=${(e: CustomEvent<SimMode>) => (this._mode = e.detail)}
           @sim-steer-change=${(e: CustomEvent<boolean>) => (this._mouseSteer = e.detail)}
+          @sim-cam-change=${(e: CustomEvent<CamMode>) => (this._camMode = e.detail)}
         ></fpv-sim>
 
         <div class="controls">
@@ -154,6 +159,21 @@ export class FpvSimulator extends LitElement {
               .options=${presetOptions}
               @select-change=${(e: CustomEvent<string>) => (this._presetKey = e.detail)}
             ></fpv-select>
+          </div>
+
+          <div class="control-group" style="min-width:auto">
+            <span class="control-label">Camera</span>
+            <div class="seg">
+              <button class=${this._camMode === 'follow' ? 'active' : ''} @click=${() => (this._camMode = 'follow')}>
+                Follow
+              </button>
+              <button class=${this._camMode === 'orbit' ? 'active' : ''} @click=${() => (this._camMode = 'orbit')}>
+                Orbit
+              </button>
+              <button class=${this._camMode === 'fpv' ? 'active' : ''} @click=${() => (this._camMode = 'fpv')}>
+                FPV
+              </button>
+            </div>
           </div>
 
           <div class="control-group" style="min-width:auto">
