@@ -397,6 +397,9 @@ export class MotorCalculator extends LitElement {
         .motorMaxCurrentA=${this._motor.maxCurrentA}
         .motorCount=${this._motorCount}
         .escRatedA=${this._escRatedA}
+        .thrustPerMotorG=${r.thrustPerMotorG}
+        .hoverCurrentPerMotorA=${r.hoverCurrentPerMotorA}
+        .maxRpm=${r.maxRpm}
       ></motor-gauge>
       <div style="margin-top:var(--fpv-space-xs)">
         <button
