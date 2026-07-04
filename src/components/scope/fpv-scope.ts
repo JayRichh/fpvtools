@@ -107,6 +107,17 @@ export class FpvScope extends LitElement {
   private _yMin = 0
   private _yMax = 1
 
+  /**
+   * Live-driver mode (set by renderFrame): the cache rebuild runs every frame,
+   * so it switches to a zero-allocation min/max envelope decimation and the
+   * y-scale contracts smoothly instead of snapping — a rolling window whose
+   * transient scrolls out otherwise makes the scale flap frame-to-frame.
+   */
+  private _liveMode = false
+  private _yMinSmooth = NaN
+  private _yMaxSmooth = NaN
+  private _scratch: Float32Array[] = []
+
   /** Visible fraction of the total time axis [0,1] */
   private _zoomStart = 0
   private _zoomEnd = 1
@@ -231,17 +242,44 @@ export class FpvScope extends LitElement {
     if (!this._cacheDirty || !this._canvas) return
     this._cacheDirty = false
 
-    // Decimate to 2× CSS-pixel width so zoom coarseness stays bounded
     const W = this._canvas.width / this._dpr
-    const threshold = Math.max(Math.ceil(W * 2), 100)
 
-    this._decimated = this.series.map(s => {
-      if (!s.data || s.data.length === 0) return new Float32Array(0)
-      if (s.data.length > threshold) return lttbDecimate(s.data, threshold)
-      return s.data
-    })
+    if (this._liveMode) {
+      // Runs every frame: min/max envelope per pixel-ish bucket, written into
+      // reused scratch buffers — no LTTB, no per-frame allocations.
+      const buckets = Math.max(64, Math.ceil(W / 2))
+      this._decimated = this.series.map((s, si) => {
+        const data = s.data
+        if (!data || data.length === 0) return new Float32Array(0)
+        if (data.length <= buckets * 2) return data
+        const out = this._scratchFor(si, buckets * 2)
+        const n = data.length
+        for (let b = 0; b < buckets; b++) {
+          const i0 = Math.floor((b * n) / buckets)
+          const i1 = Math.max(i0 + 1, Math.floor(((b + 1) * n) / buckets))
+          let lo = data[i0], hi = data[i0], loIdx = i0, hiIdx = i0
+          for (let i = i0 + 1; i < i1; i++) {
+            const v = data[i]
+            if (v < lo) { lo = v; loIdx = i }
+            if (v > hi) { hi = v; hiIdx = i }
+          }
+          // Preserve temporal order within the bucket
+          out[b * 2]     = loIdx <= hiIdx ? lo : hi
+          out[b * 2 + 1] = loIdx <= hiIdx ? hi : lo
+        }
+        return out
+      })
+    } else {
+      // Static path: LTTB at 2× CSS-pixel width so zoom coarseness stays bounded
+      const threshold = Math.max(Math.ceil(W * 2), 100)
+      this._decimated = this.series.map(s => {
+        if (!s.data || s.data.length === 0) return new Float32Array(0)
+        if (s.data.length > threshold) return lttbDecimate(s.data, threshold)
+        return s.data
+      })
+    }
 
-    // Auto-scale from full (non-decimated) visible data
+    // Auto-scale target from full (non-decimated) visible data
     let yMin = Infinity
     let yMax = -Infinity
     for (let si = 0; si < this.series.length; si++) {
@@ -258,9 +296,33 @@ export class FpvScope extends LitElement {
     if (!isFinite(yMin) || !isFinite(yMax)) { yMin = 0; yMax = 1 }
     if (yMin === yMax) { yMin -= 0.5; yMax += 0.5 }
 
-    const pad = (yMax - yMin) * 0.1
-    this._yMin = yMin - pad
-    this._yMax = yMax + pad
+    // Live: expand the displayed range instantly (never clip data) but contract
+    // it smoothly, so the scale doesn't oscillate as transients scroll out of
+    // the rolling window. Static: snap directly.
+    if (!this._liveMode || !isFinite(this._yMinSmooth)) {
+      this._yMinSmooth = yMin
+      this._yMaxSmooth = yMax
+    } else {
+      this._yMinSmooth = yMin < this._yMinSmooth
+        ? yMin
+        : this._yMinSmooth + (yMin - this._yMinSmooth) * 0.045
+      this._yMaxSmooth = yMax > this._yMaxSmooth
+        ? yMax
+        : this._yMaxSmooth + (yMax - this._yMaxSmooth) * 0.045
+    }
+
+    const pad = (this._yMaxSmooth - this._yMinSmooth) * 0.1 || 0.5
+    this._yMin = this._yMinSmooth - pad
+    this._yMax = this._yMaxSmooth + pad
+  }
+
+  private _scratchFor(si: number, len: number): Float32Array {
+    let base = this._scratch[si]
+    if (!base || base.length < len) {
+      base = new Float32Array(len)
+      this._scratch[si] = base
+    }
+    return base.length === len ? base : base.subarray(0, len)
   }
 
   // ─── Coordinate helpers ───────────────────────────────────────────────────
@@ -478,6 +540,8 @@ export class FpvScope extends LitElement {
 
       const decLen  = dec.length
       const totalMs = this.timeMs
+      // At >= ~pixel density Catmull-Rom subdivision is invisible — skip it
+      const subSteps = decLen >= W * 0.75 ? 1 : SUB_STEPS
 
       ctx.save()
       ctx.strokeStyle = s.color
@@ -509,9 +573,9 @@ export class FpvScope extends LitElement {
         const p2 = dec[i + 1]
         const p3 = i + 2 < decLen ? dec[i + 2] : dec[i + 1]
 
-        for (let sub = 1; sub <= SUB_STEPS; sub++) {
-          const t  = sub / SUB_STEPS
-          const iy = catmullRom(p0, p1, p2, p3, t)
+        for (let sub = 1; sub <= subSteps; sub++) {
+          const t  = sub / subSteps
+          const iy = subSteps === 1 ? p2 : catmullRom(p0, p1, p2, p3, t)
           const ix = x0 + (x1 - x0) * t
           ctx.lineTo(ix, this._valueToY(iy))
         }
@@ -849,6 +913,7 @@ export class FpvScope extends LitElement {
    * driver ticks.
    */
   renderFrame(series: ScopeSeries[], timeMs: number): void {
+    this._liveMode = true
     this.series = series
     this.timeMs = timeMs
     this.performUpdate()

@@ -143,47 +143,21 @@ export class PidSimulator extends LitElement {
         min-width: 0;
       }
 
-      .tab-panel {
-        min-height: 340px;
-      }
-
       fpv-scope {
         width: 100%;
-        min-height: 300px;
+        min-height: 260px;
       }
 
-      fpv-quad-preview-3d {
-        height: clamp(300px, 42vh, 480px);
-      }
-
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: var(--fpv-space-sm);
-      }
-
-      .metric-card {
-        background: var(--fpv-surface-2);
-        border: 1px solid var(--fpv-border);
-        border-radius: var(--fpv-radius-md);
-        padding: var(--fpv-space-md);
-        display: flex;
-        flex-direction: column;
-        gap: var(--fpv-space-xs);
-      }
-
-      .metric-label {
+      .scope-caption {
         font-size: var(--fpv-font-label);
         color: var(--fpv-text-muted);
         text-transform: uppercase;
         letter-spacing: 0.06em;
+        margin-bottom: 4px;
       }
 
-      .metric-value {
-        font-family: var(--fpv-font-mono);
-        font-size: var(--fpv-font-body);
-        color: var(--fpv-text);
-        font-weight: 600;
+      fpv-quad-preview-3d {
+        height: clamp(300px, 42vh, 480px);
       }
 
       .metric-null {
@@ -191,11 +165,11 @@ export class PidSimulator extends LitElement {
         font-style: italic;
       }
 
-      /* Compact always-visible live metrics strip (independent of active tab) */
+      /* Always-visible live metrics strip: the page's single metrics surface */
       .metrics-strip {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--fpv-space-md);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: var(--fpv-space-sm) var(--fpv-space-md);
         padding: var(--fpv-space-sm) var(--fpv-space-md);
         background: var(--fpv-surface-2);
         border: 1px solid var(--fpv-border);
@@ -233,7 +207,6 @@ export class PidSimulator extends LitElement {
   // ── State ──────────────────────────────────────────────────────────────────
   @state() private _config: SimConfig = DEFAULT_CONFIG
   @state() private _result: SimResult | null = null
-  @state() private _activeTab = 0
   @state() private _running = true
   // Plain (NON-reactive) field. It's written every sim frame, so making it
   // @state would force a full parent re-render 60×/s. The HUD reads it on
@@ -250,10 +223,18 @@ export class PidSimulator extends LitElement {
   private _windowMs = 2000
   private _metricsTick = 0
 
-  // Cached child ref (unconditionally present) + last-rendered HUD label, used
+  // Cached child refs (unconditionally present) + last-rendered HUD label, used
   // to drive the viz imperatively and throttle the parent template re-render.
   private _quadEl: HTMLElementTagNameMap['fpv-quad-preview-3d'] | null = null
+  private _scopeResponseEl: HTMLElementTagNameMap['fpv-scope'] | null = null
+  private _scopeTermsEl: HTMLElementTagNameMap['fpv-scope'] | null = null
   private _lastHudLabel = ''
+
+  // Grow-only Float32Array scratch pool for the scope series. Rebuilt views are
+  // handed to the scopes every frame; reusing the backing stores keeps the
+  // 60 fps hot path allocation-free (the old per-frame allocations were a GC
+  // churn source that degraded long-running sessions).
+  private _seriesBuf: Float32Array[] = []
 
   // ── Smoothed display values for the 3D quad preview (EMA, see
   //    QUAD_SMOOTH_TAU_MS). These are DISPLAY-ONLY and never feed the scope or
@@ -267,9 +248,11 @@ export class PidSimulator extends LitElement {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   firstUpdated() {
-    // Cache the (unconditionally rendered) quad element so _tick can drive it
-    // imperatively without a per-frame querySelector.
+    // Cache the (unconditionally rendered) viz elements so _tick can drive them
+    // imperatively without per-frame querySelectors.
     this._quadEl = this.renderRoot.querySelector('fpv-quad-preview-3d')
+    this._scopeResponseEl = this.renderRoot.querySelector('#scope-response')
+    this._scopeTermsEl = this.renderRoot.querySelector('#scope-terms')
     this._resetSim()
     this._startLoop()
   }
@@ -347,11 +330,12 @@ export class PidSimulator extends LitElement {
       this._rollingBuf.push(...newSamples)
       this._elapsedMs = this._runner!.elapsedMs
 
-      // Trim to windowMs
+      // Trim to windowMs with a single splice (one memmove) instead of a
+      // per-element shift() loop.
       const cutoff = this._elapsedMs - this._windowMs
-      while (this._rollingBuf.length > 0 && this._rollingBuf[0].tMs < cutoff) {
-        this._rollingBuf.shift()
-      }
+      let cut = 0
+      while (cut < this._rollingBuf.length && this._rollingBuf[cut].tMs < cutoff) cut++
+      if (cut > 0) this._rollingBuf.splice(0, cut)
 
       // Advance the quad-preview EMA. Take the mean of this frame's new samples
       // (pre-averages intra-frame high-frequency content) and low-pass across
@@ -412,15 +396,8 @@ export class PidSimulator extends LitElement {
    */
   private _drawViz() {
     this._quadEl?.renderFrame(this._getQuadProps())
-
-    // The scope element exists only for the response/terms tabs, not metrics.
-    if (this._activeTab === 2) return
-    const scope = this.renderRoot.querySelector('fpv-scope')
-    if (!scope) return
-    const series = this._activeTab === 0
-      ? this._buildResponseSeries()
-      : this._buildTermsSeries()
-    scope.renderFrame(series, this._windowMs)
+    this._scopeResponseEl?.renderFrame(this._buildResponseSeries(), this._windowMs)
+    this._scopeTermsEl?.renderFrame(this._buildTermsSeries(), this._windowMs)
   }
 
   // ── HUD button handlers ───────────────────────────────────────────────────
@@ -460,13 +437,23 @@ export class PidSimulator extends LitElement {
 
   // ── Scope series builders ─────────────────────────────────────────────────
 
+  /** Grow-only reusable Float32Array view (see _seriesBuf). */
+  private _bufFor(slot: number, len: number): Float32Array {
+    let base = this._seriesBuf[slot]
+    if (!base || base.length < len) {
+      base = new Float32Array(Math.max(len, 2048))
+      this._seriesBuf[slot] = base
+    }
+    return base.length === len ? base : base.subarray(0, len)
+  }
+
   private _buildResponseSeries(): ScopeSeries[] {
     const samples = this._rollingBuf
     if (samples.length === 0) return []
     const n = samples.length
-    const setpoint = new Float32Array(n)
-    const gyro     = new Float32Array(n)
-    const error    = new Float32Array(n)
+    const setpoint = this._bufFor(0, n)
+    const gyro     = this._bufFor(1, n)
+    const error    = this._bufFor(2, n)
     for (let i = 0; i < n; i++) {
       setpoint[i] = samples[i].setpointDegS
       gyro[i]     = samples[i].gyroDegS
@@ -483,10 +470,10 @@ export class PidSimulator extends LitElement {
     const samples = this._rollingBuf
     if (samples.length === 0) return []
     const n = samples.length
-    const p     = new Float32Array(n)
-    const iArr  = new Float32Array(n)
-    const d     = new Float32Array(n)
-    const motor = new Float32Array(n)
+    const p     = this._bufFor(3, n)
+    const iArr  = this._bufFor(4, n)
+    const d     = this._bufFor(5, n)
+    const motor = this._bufFor(6, n)
     for (let i = 0; i < n; i++) {
       p[i]     = samples[i].pTerm
       iArr[i]  = samples[i].iTerm
@@ -529,49 +516,15 @@ export class PidSimulator extends LitElement {
   // ── Metrics rendering ─────────────────────────────────────────────────────
 
   /**
-   * Compact, always-visible live metrics strip (shown regardless of active
-   * tab). Stays live because _tick recomputes _result on the METRICS_EVERY
-   * throttle independent of the active tab. Reuses the pid.metric_* / common.na
-   * i18n keys and token-based styling.
+   * The page's single, always-visible metrics surface (the old Metrics tab is
+   * consolidated into this strip). Stays live because _tick recomputes _result
+   * on the METRICS_EVERY throttle; each metric carries the status badge that
+   * previously lived on the tab.
    */
   private _renderMetricsStrip() {
     const m = this._result?.metrics
     const na = html`<span class="strip-value metric-null">${this._i18n.t('common.na')}</span>`
-    const val = (v: number | null | undefined, unit: string, digits = 1) =>
-      v === null || v === undefined
-        ? na
-        : html`<span class="strip-value">${v.toFixed(digits)} ${unit}</span>`
-    return html`
-      <div class="metrics-strip">
-        <div class="strip-item">
-          <span class="strip-label">${this._i18n.t('pid.metric_rise_time')}</span>
-          ${val(m?.riseTimeMs, 'ms')}
-        </div>
-        <div class="strip-item">
-          <span class="strip-label">${this._i18n.t('pid.metric_overshoot')}</span>
-          ${val(m?.overshootPct, '%')}
-        </div>
-        <div class="strip-item">
-          <span class="strip-label">${this._i18n.t('pid.metric_settling_time')}</span>
-          ${val(m?.settlingTimeMs, 'ms')}
-        </div>
-        <div class="strip-item">
-          <span class="strip-label">${this._i18n.t('pid.metric_oscillation')}</span>
-          ${val(m?.oscillationHz, 'Hz')}
-        </div>
-      </div>
-    `
-  }
-
-  private _renderMetrics() {
-
-    const m = this._result?.metrics
-    if (!m) return html`<div class="metric-null">${this._i18n.t('pid.loading')}</div>`
-
-    const fmt = (v: number | null, unit: string, digits = 1) =>
-      v === null
-        ? html`<span class="metric-null">${this._i18n.t('common.na')}</span>`
-        : html`<span>${v.toFixed(digits)} ${unit}</span>`
+    const t = (k: string) => this._i18n.t(k)
 
     const badgeVariant = (v: number | null, good: number, warn: number): string => {
       if (v === null) return 'success'
@@ -580,50 +533,40 @@ export class PidSimulator extends LitElement {
       return 'error'
     }
 
+    const item = (
+      label: string,
+      value: number | null | undefined,
+      unit: string,
+      digits: number,
+      badge?: { v: number; good: number; warn: number; labels: [string, string, string] },
+    ) => html`
+      <div class="strip-item">
+        <span class="strip-label">${label}</span>
+        ${value === null || value === undefined
+          ? na
+          : html`<span class="strip-value">${value.toFixed(digits)} ${unit}</span>`}
+        ${badge
+          ? html`<fpv-badge .variant=${badgeVariant(badge.v, badge.good, badge.warn)}>
+              ${badge.v <= badge.good ? t(badge.labels[0]) : badge.v <= badge.warn ? t(badge.labels[1]) : t(badge.labels[2])}
+            </fpv-badge>`
+          : ''}
+      </div>
+    `
+
     return html`
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-label">${this._i18n.t('pid.metric_rise_time')}</div>
-          <div class="metric-value">${fmt(m.riseTimeMs, 'ms')}</div>
-          ${m.riseTimeMs !== null ? html`<fpv-badge .variant=${badgeVariant(m.riseTimeMs, 30, 80)}>
-            ${m.riseTimeMs <= 30 ? this._i18n.t('common.status_fast') : m.riseTimeMs <= 80 ? this._i18n.t('common.status_ok') : this._i18n.t('common.status_slow')}
-          </fpv-badge>` : ''}
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">${this._i18n.t('pid.metric_overshoot')}</div>
-          <div class="metric-value">${fmt(m.overshootPct, '%')}</div>
-          ${m.overshootPct !== null ? html`<fpv-badge .variant=${badgeVariant(m.overshootPct, 5, 20)}>
-            ${m.overshootPct <= 5 ? this._i18n.t('common.status_good') : m.overshootPct <= 20 ? this._i18n.t('common.status_moderate') : this._i18n.t('common.status_high')}
-          </fpv-badge>` : ''}
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">${this._i18n.t('pid.metric_settling_time')}</div>
-          <div class="metric-value">${fmt(m.settlingTimeMs, 'ms')}</div>
-          ${m.settlingTimeMs !== null ? html`<fpv-badge .variant=${badgeVariant(m.settlingTimeMs, 100, 300)}>
-            ${m.settlingTimeMs <= 100 ? this._i18n.t('common.status_fast') : m.settlingTimeMs <= 300 ? this._i18n.t('common.status_ok') : this._i18n.t('common.status_slow')}
-          </fpv-badge>` : ''}
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">${this._i18n.t('pid.metric_ss_error')}</div>
-          <div class="metric-value">${fmt(m.steadyStateErrorDegS, '°/s', 2)}</div>
-          ${m.steadyStateErrorDegS !== null ? html`<fpv-badge .variant=${badgeVariant(Math.abs(m.steadyStateErrorDegS), 2, 10)}>
-            ${Math.abs(m.steadyStateErrorDegS) <= 2 ? this._i18n.t('common.status_good') : Math.abs(m.steadyStateErrorDegS) <= 10 ? this._i18n.t('common.status_fair') : this._i18n.t('common.status_poor')}
-          </fpv-badge>` : ''}
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">${this._i18n.t('pid.metric_oscillation')}</div>
-          <div class="metric-value">${fmt(m.oscillationHz, 'Hz')}</div>
-          ${m.oscillationHz !== null ? html`<fpv-badge .variant=${badgeVariant(m.oscillationHz, 5, 20)}>
-            ${m.oscillationHz <= 5 ? this._i18n.t('common.status_stable') : m.oscillationHz <= 20 ? this._i18n.t('common.status_moderate') : this._i18n.t('common.status_oscillating')}
-          </fpv-badge>` : ''}
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">${this._i18n.t('pid.metric_motor_rms')}</div>
-          <div class="metric-value">${m.motorActivityRms.toFixed(3)} Nm</div>
-          <fpv-badge .variant=${badgeVariant(m.motorActivityRms, 0.1, 0.3)}>
-            ${m.motorActivityRms <= 0.1 ? this._i18n.t('common.status_smooth') : m.motorActivityRms <= 0.3 ? this._i18n.t('common.status_normal') : this._i18n.t('common.status_active')}
-          </fpv-badge>
-        </div>
+      <div class="metrics-strip">
+        ${item(t('pid.metric_rise_time'), m?.riseTimeMs, 'ms', 1,
+          m?.riseTimeMs != null ? { v: m.riseTimeMs, good: 30, warn: 80, labels: ['common.status_fast', 'common.status_ok', 'common.status_slow'] } : undefined)}
+        ${item(t('pid.metric_overshoot'), m?.overshootPct, '%', 1,
+          m?.overshootPct != null ? { v: m.overshootPct, good: 5, warn: 20, labels: ['common.status_good', 'common.status_moderate', 'common.status_high'] } : undefined)}
+        ${item(t('pid.metric_settling_time'), m?.settlingTimeMs, 'ms', 1,
+          m?.settlingTimeMs != null ? { v: m.settlingTimeMs, good: 100, warn: 300, labels: ['common.status_fast', 'common.status_ok', 'common.status_slow'] } : undefined)}
+        ${item(t('pid.metric_ss_error'), m?.steadyStateErrorDegS, '°/s', 2,
+          m?.steadyStateErrorDegS != null ? { v: Math.abs(m.steadyStateErrorDegS), good: 2, warn: 10, labels: ['common.status_good', 'common.status_fair', 'common.status_poor'] } : undefined)}
+        ${item(t('pid.metric_oscillation'), m?.oscillationHz, 'Hz', 1,
+          m?.oscillationHz != null ? { v: m.oscillationHz, good: 5, warn: 20, labels: ['common.status_stable', 'common.status_moderate', 'common.status_oscillating'] } : undefined)}
+        ${item(t('pid.metric_motor_rms'), m?.motorActivityRms, 'Nm', 3,
+          m?.motorActivityRms != null ? { v: m.motorActivityRms, good: 0.1, warn: 0.3, labels: ['common.status_smooth', 'common.status_normal', 'common.status_active'] } : undefined)}
       </div>
     `
   }
@@ -655,37 +598,23 @@ export class PidSimulator extends LitElement {
         <div class="viz-col">
           ${this._renderMetricsStrip()}
 
-          <fpv-card>
-            <fpv-tabs
-              .tabs=${[
-                this._i18n.t('pid.tab_response'),
-                this._i18n.t('pid.tab_terms'),
-                this._i18n.t('pid.tab_metrics'),
-              ]}
-              .active=${this._activeTab}
-              @tab-change=${(e: CustomEvent<number>) => {
-                this._activeTab = e.detail
-                if (e.detail === 2 && this._running) this._result = this._computeMetrics()
-              }}
-            ></fpv-tabs>
-            <div class="tab-panel">
-              ${this._activeTab === 0 ? html`
-                <fpv-scope
-                  .series=${this._buildResponseSeries()}
-                  .timeMs=${this._windowMs}
-                ></fpv-scope>
-              ` : ''}
-              ${this._activeTab === 1 ? html`
-                <fpv-scope
-                  .series=${this._buildTermsSeries()}
-                  .timeMs=${this._windowMs}
-                ></fpv-scope>
-              ` : ''}
-              ${this._activeTab === 2 ? html`
-                ${this._renderMetrics()}
-              ` : ''}
-            </div>
-          </fpv-card>
+          <div>
+            <div class="scope-caption">${this._i18n.t('pid.tab_response')}</div>
+            <fpv-scope
+              id="scope-response"
+              .series=${this._buildResponseSeries()}
+              .timeMs=${this._windowMs}
+            ></fpv-scope>
+          </div>
+
+          <div>
+            <div class="scope-caption">${this._i18n.t('pid.tab_terms')}</div>
+            <fpv-scope
+              id="scope-terms"
+              .series=${this._buildTermsSeries()}
+              .timeMs=${this._windowMs}
+            ></fpv-scope>
+          </div>
 
           <fpv-quad-preview-3d
             .motorOutputs=${quad.motorOutputs}
