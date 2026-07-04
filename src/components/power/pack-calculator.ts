@@ -5,7 +5,9 @@ import { I18nController } from '../primitives/I18nController.js'
 import { CELL_LIBRARY } from '@core/power/cells'
 import { computePack } from '@core/power/pack'
 import type { PackConfig, FlightModel, PackResult } from '@core/power/types'
+import { activeSetup, type ActiveSetup } from '@core/setup/store'
 import '../primitives/index.js'
+import '../setup/fpv-setup-chip.js'
 import './pack-viz.js'
 
 const DEFAULT_CELL_KEY = 'Molicel P42A'
@@ -134,6 +136,31 @@ export class PackCalculator extends LitElement {
   private _updateFlight(partial: Partial<FlightModel>) {
     this._flightModel = { ...this._flightModel, ...partial }
     this._recompute()
+  }
+
+  private _applySetup(e: CustomEvent<ActiveSetup>) {
+    const s = e.detail
+    const pack: Partial<PackConfig> = {}
+    if (s.cellCount !== undefined) pack.series = s.cellCount
+    if (s.parallelCount !== undefined) pack.parallel = s.parallelCount
+    if (Object.keys(pack).length) this._packConfig = { ...this._packConfig, ...pack }
+    const flight: Partial<FlightModel> = {}
+    if (s.auwG !== undefined) flight.auwG = s.auwG
+    if (s.hoverEfficiencyGPerW !== undefined) flight.hoverEfficiencyGPerW = s.hoverEfficiencyGPerW
+    if (Object.keys(flight).length) this._flightModel = { ...this._flightModel, ...flight }
+    this._recompute()
+  }
+
+  private _saveSetup() {
+    const cell = this._packConfig.cell
+    activeSetup.update({
+      cellCount: this._packConfig.series,
+      parallelCount: this._packConfig.parallel,
+      capacityPerCellMah: cell.capacityMah,
+      chemistry: cell.nominalV >= 3.7 ? 'lipo' : 'liion',
+      auwG: this._flightModel.auwG,
+      hoverEfficiencyGPerW: this._flightModel.hoverEfficiencyGPerW,
+    })
   }
 
   private _renderCellSelect() {
@@ -313,6 +340,10 @@ export class PackCalculator extends LitElement {
       : 0
 
     return html`
+      <fpv-setup-chip
+        @setup-apply=${this._applySetup}
+        @setup-save=${this._saveSetup}
+      ></fpv-setup-chip>
       <div class="layout">
         <div class="inputs">
           ${this._renderCellSelect()}

@@ -8,6 +8,8 @@ export interface StickInput {
   yaw: number
 }
 
+import type { ActualRates } from './rates.js'
+
 export interface SimConfig {
   massKg: number
   /** Max static thrust / weight */
@@ -16,10 +18,8 @@ export interface SimConfig {
   dragK: number
   /** Quadratic drag coefficient (1/m) */
   dragK2: number
-  /** Acro: full-deflection rotation rate */
-  maxRateDegS: number
-  /** Acro stick expo 0..1 */
-  expo: number
+  /** Acro: Betaflight-style Actual Rates (roll/pitch; yaw scaled) */
+  rates: ActualRates
   /** Rate-response time constant (s) */
   rateTau: number
   /** Easy (angle) mode: max commanded tilt */

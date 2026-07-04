@@ -4,7 +4,9 @@ import { tokenStyles } from '../primitives/tokens.css.js'
 import { I18nController } from '../primitives/I18nController.js'
 import { checkVtxRules, COUNTRIES } from '@core/rf/rules'
 import type { VtxRuleQuery, VtxRuleResult } from '@core/rf/types'
+import { activeSetup, type ActiveSetup } from '@core/setup/store'
 import '../primitives/index.js'
+import '../setup/fpv-setup-chip.js'
 
 const DEFAULT_QUERY: VtxRuleQuery = {
   country: 'USA (FCC)',
@@ -93,6 +95,14 @@ export class VtxChecker extends LitElement {
     this._result = checkVtxRules(this._query)
   }
 
+  private _applySetup(e: CustomEvent<ActiveSetup>) {
+    if (e.detail.vtxPowerMw !== undefined) this._update({ powerMw: e.detail.vtxPowerMw })
+  }
+
+  private _saveSetup() {
+    activeSetup.update({ vtxPowerMw: this._query.powerMw })
+  }
+
   render() {
     const r = this._result
     const countryOptions = COUNTRIES.map(c => ({ value: c, label: c }))
@@ -103,6 +113,10 @@ export class VtxChecker extends LitElement {
     ]
     return html`
       <div class="sections">
+        <fpv-setup-chip
+          @setup-apply=${this._applySetup}
+          @setup-save=${this._saveSetup}
+        ></fpv-setup-chip>
         <fpv-card .header=${this._i18n.t('common.setup')}>
           <div class="rows">
             <fpv-select

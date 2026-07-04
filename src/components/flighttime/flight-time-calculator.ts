@@ -4,7 +4,9 @@ import { tokenStyles } from '../primitives/tokens.css.js'
 import { I18nController } from '../primitives/I18nController.js'
 import { computeFlightTime, FLIGHTTIME_DEFAULTS } from '@core/flighttime/calculate.js'
 import type { FlightTimeInput, FlightTimeResult } from '@core/flighttime/types.js'
+import { activeSetup, type ActiveSetup } from '@core/setup/store'
 import '../primitives/index.js'
+import '../setup/fpv-setup-chip.js'
 import './flight-time-canvas.js'
 import './flight-time-viz.js'
 
@@ -130,6 +132,31 @@ export class FlightTimeCalculator extends LitElement {
     this._result = this._computed
   }
 
+  private _applySetup(e: CustomEvent<ActiveSetup>) {
+    const s = e.detail
+    const next = { ...this._input }
+    if (s.chemistry !== undefined) next.chemistry = s.chemistry
+    if (s.cellCount !== undefined) next.cellCount = s.cellCount
+    if (s.parallelCount !== undefined) next.parallelCount = s.parallelCount
+    if (s.capacityPerCellMah !== undefined) next.capacityPerCellMah = s.capacityPerCellMah
+    if (s.auwG !== undefined) next.auwG = s.auwG
+    if (s.hoverEfficiencyGPerW !== undefined) next.hoverEfficiencyGPerW = s.hoverEfficiencyGPerW
+    this._input = next
+    this._result = this._computed
+  }
+
+  private _saveSetup() {
+    const i = this._input
+    activeSetup.update({
+      chemistry: i.chemistry,
+      cellCount: i.cellCount,
+      parallelCount: i.parallelCount,
+      capacityPerCellMah: i.capacityPerCellMah,
+      auwG: i.auwG,
+      hoverEfficiencyGPerW: i.hoverEfficiencyGPerW,
+    })
+  }
+
   connectedCallback() {
     super.connectedCallback()
     this._result = this._computed
@@ -147,6 +174,10 @@ export class FlightTimeCalculator extends LitElement {
 
     return html`
       <div class="layout">
+        <fpv-setup-chip
+          @setup-apply=${this._applySetup}
+          @setup-save=${this._saveSetup}
+        ></fpv-setup-chip>
         <flight-time-viz
           .result=${res}
           chemistry=${inp.chemistry}

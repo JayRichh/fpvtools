@@ -4,8 +4,10 @@ import { createOrbitCamera, projectPoint, rotX } from '@core/render/engine2d'
 import type { OrbitCamera, SceneNode, Vec3, Projected } from '@core/render/engine2d'
 import { createSimState, stepSim, qRotate } from '@core/sim/flight'
 import type { Quat, SimMode, SimState, StickInput } from '@core/sim/types'
+import type { ActualRates } from '@core/sim/rates'
 import { SIM_PRESETS, DEFAULT_SIM_PRESET } from '@core/sim/presets'
 import { mulberry32 } from '@core/shared/prng'
+import { GamepadInput } from './gamepad.js'
 
 const TAU = Math.PI * 2
 const DEG = Math.PI / 180
@@ -59,6 +61,13 @@ export class FpvSim extends FpvCanvas {
   @property({ type: String }) presetKey = DEFAULT_SIM_PRESET
   @property({ type: Boolean }) mouseSteer = false
   @property({ type: String }) camMode: CamMode = 'follow'
+  /** Overrides the preset's acro rates when set (wrapper's Rates panel) */
+  @property({ type: Object }) rates: ActualRates | null = null
+  @property({ type: Boolean }) gamepadEnabled = true
+
+  /** Gamepad poller — exposed so the wrapper can run the learn/remap flow */
+  readonly gamepad = new GamepadInput()
+  private _padActive = false
 
   private _state: SimState = createSimState()
   private _keys = new Set<string>()
@@ -221,26 +230,37 @@ export class FpvSim extends FpvCanvas {
   }
 
   private _tick(dt: number) {
-    // Throttle: W/S slews fast enough to punch out / chop within ~0.45 s
-    this._throttle = Math.max(0, Math.min(1, this._throttle + this._axis('s', 'w') * 2.2 * dt))
+    const gp = this.gamepadEnabled ? this.gamepad.read() : null
+    this._padActive = gp !== null
 
-    // Sticks ease toward key targets (snappy attack and release)
-    let rollT = this._axis('arrowleft', 'arrowright')
-    let pitchT = this._axis('arrowdown', 'arrowup')
-    const yawT = this._axis('a', 'd')
+    if (gp) {
+      // Radio-grade input: sticks map directly, no slew/easing
+      this._throttle = gp.throttle
+      this._stick.roll = gp.roll
+      this._stick.pitch = gp.pitch
+      this._stick.yaw = gp.yaw
+    } else {
+      // Throttle: W/S slews fast enough to punch out / chop within ~0.45 s
+      this._throttle = Math.max(0, Math.min(1, this._throttle + this._axis('s', 'w') * 2.2 * dt))
 
-    // Mouse steering: pointer offset from canvas center commands roll/pitch
-    if (this.mouseSteer && this.pointerPos) {
-      const W = this.offsetWidth, H = this.offsetHeight
-      const span = Math.min(W, H) * 0.35
-      rollT = Math.max(-1, Math.min(1, (this.pointerPos.x - W / 2) / span))
-      pitchT = Math.max(-1, Math.min(1, (H / 2 - this.pointerPos.y) / span))
+      // Sticks ease toward key targets (snappy attack and release)
+      let rollT = this._axis('arrowleft', 'arrowright')
+      let pitchT = this._axis('arrowdown', 'arrowup')
+      const yawT = this._axis('a', 'd')
+
+      // Mouse steering: pointer offset from canvas center commands roll/pitch
+      if (this.mouseSteer && this.pointerPos) {
+        const W = this.offsetWidth, H = this.offsetHeight
+        const span = Math.min(W, H) * 0.35
+        rollT = Math.max(-1, Math.min(1, (this.pointerPos.x - W / 2) / span))
+        pitchT = Math.max(-1, Math.min(1, (H / 2 - this.pointerPos.y) / span))
+      }
+
+      const ease = 1 - Math.exp(-dt * 22)
+      this._stick.roll += (rollT - this._stick.roll) * ease
+      this._stick.pitch += (pitchT - this._stick.pitch) * ease
+      this._stick.yaw += (yawT - this._stick.yaw) * ease
     }
-
-    const ease = 1 - Math.exp(-dt * 22)
-    this._stick.roll += (rollT - this._stick.roll) * ease
-    this._stick.pitch += (pitchT - this._stick.pitch) * ease
-    this._stick.yaw += (yawT - this._stick.yaw) * ease
 
     const input: StickInput = {
       throttle: this._throttle,
@@ -248,7 +268,8 @@ export class FpvSim extends FpvCanvas {
       pitch: this._stick.pitch,
       yaw: this._stick.yaw,
     }
-    const cfg = SIM_PRESETS[this.presetKey] ?? SIM_PRESETS[DEFAULT_SIM_PRESET]
+    const preset = SIM_PRESETS[this.presetKey] ?? SIM_PRESETS[DEFAULT_SIM_PRESET]
+    const cfg = this.rates ? { ...preset, rates: this.rates } : preset
     this._state = stepSim(this._state, input, cfg, this.mode, dt)
   }
 
@@ -520,7 +541,7 @@ export class FpvSim extends FpvCanvas {
     ctx.font = `bold 11px ${fontSans}`
     ctx.fillStyle = clrMuted
     ctx.fillText(
-      `${this.mode === 'easy' ? 'EASY' : 'NORMAL'} · ${this.presetKey} · CAM ${this.camMode.toUpperCase()}${this.mouseSteer ? ' · MOUSE STEER' : ''}`,
+      `${this.mode === 'easy' ? 'EASY' : 'NORMAL'} · ${this.presetKey} · CAM ${this.camMode.toUpperCase()}${this._padActive ? ' · PAD' : ''}${this.mouseSteer ? ' · MOUSE STEER' : ''}`,
       8, 8,
     )
 

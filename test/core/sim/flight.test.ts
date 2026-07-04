@@ -70,7 +70,7 @@ describe('stepSim', () => {
     const up = qRotate(s.quat, [0, 1, 0])
     // After sustained full-rate roll the up vector cannot still be near world-up
     // for the whole run — check it has rotated away at some point via rates
-    expect(Math.abs(s.ratesDegS[0])).toBeGreaterThan(cfg.maxRateDegS * 0.8)
+    expect(Math.abs(s.ratesDegS[0])).toBeGreaterThan(cfg.rates.maxRateDegS * 0.8)
     expect(Math.hypot(...up)).toBeCloseTo(1, 6)
   })
 

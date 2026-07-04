@@ -4,8 +4,11 @@
 // Deterministic: stepSim is a pure function of (state, input, config, dt).
 
 import type { Quat, SimConfig, SimMode, SimState, SimVec3, StickInput } from './types.js'
+import { actualRateCurve } from './rates.js'
 
 export type { Quat, SimConfig, SimMode, SimState, SimVec3, StickInput }
+export { actualRateCurve } from './rates.js'
+export type { ActualRates } from './rates.js'
 
 const G = 9.81
 const DEG = Math.PI / 180
@@ -87,10 +90,6 @@ export function createSimState(): SimState {
   }
 }
 
-function applyExpo(stick: number, expo: number): number {
-  return stick * (1 - expo) + stick * stick * stick * expo
-}
-
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 /** Advance the sim by dt seconds. Pure — returns a new state. */
@@ -120,11 +119,12 @@ export function stepSim(
     quat = qFromEuler(rollTarget, pitchTarget, yawDeg)
     ratesDegS = [roll * cfg.maxTiltDeg, pitch * cfg.maxTiltDeg, yaw * cfg.yawRateDegS]
   } else {
-    // Acro: sticks command body rates with expo; first-order rate response
+    // Acro: sticks command body rates through the Actual Rates curve;
+    // first-order rate response
     const target: SimVec3 = [
-      -applyExpo(roll, cfg.expo) * cfg.maxRateDegS,
-      applyExpo(pitch, cfg.expo) * cfg.maxRateDegS,
-      -applyExpo(yaw, cfg.expo) * cfg.maxRateDegS * 0.6,
+      -actualRateCurve(roll, cfg.rates),
+      actualRateCurve(pitch, cfg.rates),
+      -actualRateCurve(yaw, cfg.rates) * 0.6,
     ]
     const alpha = 1 - Math.exp(-dt / cfg.rateTau)
     ratesDegS = [

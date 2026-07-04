@@ -4,7 +4,9 @@ import { tokenStyles } from '../primitives/tokens.css.js'
 import { I18nController } from '../primitives/I18nController.js'
 import { computeSizing, MOTOR_LIBRARY, PROP_LIBRARY } from '@core/motors/sizing'
 import type { MotorSpec, PropSpec, SizingResult } from '@core/motors/types'
+import { activeSetup, type ActiveSetup } from '@core/setup/store'
 import '../primitives/index.js'
+import '../setup/fpv-setup-chip.js'
 import './motor-gauge.js'
 
 @customElement('motor-calculator')
@@ -159,6 +161,30 @@ export class MotorCalculator extends LitElement {
     if (tw >= 2) return 'success'
     if (tw >= 1.5) return 'warning'
     return 'error'
+  }
+
+  private _applySetup(e: CustomEvent<ActiveSetup>) {
+    const s = e.detail
+    if (s.auwG !== undefined) this._auwG = s.auwG
+    if (s.cellCount !== undefined) this._cellCount = s.cellCount
+    if (s.motorName && MOTOR_LIBRARY[s.motorName]) {
+      this._motorKey = s.motorName
+      this._useCustomMotor = false
+    }
+    if (s.propName && PROP_LIBRARY[s.propName]) {
+      this._propKey = s.propName
+      this._useCustomProp = false
+    }
+  }
+
+  private _saveSetup() {
+    activeSetup.update({
+      auwG: this._auwG,
+      cellCount: this._cellCount,
+      motorName: this._useCustomMotor ? undefined : this._motorKey,
+      propName: this._useCustomProp ? undefined : this._propKey,
+      hoverEfficiencyGPerW: this._result.efficiencyGPerW,
+    })
   }
 
   private _sendToFlightTime() {
@@ -412,6 +438,10 @@ export class MotorCalculator extends LitElement {
 
   render() {
     return html`
+      <fpv-setup-chip
+        @setup-apply=${this._applySetup}
+        @setup-save=${this._saveSetup}
+      ></fpv-setup-chip>
       <div class="layout">
         <div class="controls">
           ${this._renderMotorSection()}
